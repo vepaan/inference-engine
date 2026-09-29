@@ -51,12 +51,14 @@ int main() {
         tree.root(), prefix_tokens, prefix_pages);
 
     for (std::size_t branch = 0; branch < kBranchFactor; ++branch) {
-        static_cast<void>(tree.fork(prefix, static_cast<std::uint32_t>(branch)));
         const std::vector<TokenId> suffix_tokens =
             make_tokens(kSuffixTokens, static_cast<TokenId>(branch + 1));
         const std::vector<inference_engine::PageId> suffix_pages =
             shared_allocator.allocate_tokens(kSuffixTokens);
-        static_cast<void>(tree.append(prefix, suffix_tokens, suffix_pages));
+        inference_engine::Node* leaf =
+            tree.append(prefix, suffix_tokens, suffix_pages);
+        static_cast<void>(
+            tree.fork(leaf, static_cast<std::uint32_t>(branch)));
     }
 
     const double naive_megabytes = to_megabytes(naive_allocator.allocated_bytes());

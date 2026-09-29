@@ -24,6 +24,14 @@ struct Node {
          std::span<const PageId> edge_pages);
 };
 
+static_assert(sizeof(Node) == 80, "Node layout changed; update the report");
+static_assert(offsetof(Node, ref_count) == 0);
+static_assert(offsetof(Node, first_child) == 8);
+static_assert(offsetof(Node, next_sibling) == 16);
+static_assert(offsetof(Node, parent) == 24);
+static_assert(offsetof(Node, tokens) == 32);
+static_assert(offsetof(Node, page_ids) == 56);
+
 class KvRadixTree {
 public:
     struct Match {

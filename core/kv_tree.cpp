@@ -131,6 +131,9 @@ Node* KvRadixTree::append(Node* parent,
         matching_child->tokens.erase(
             matching_child->tokens.begin(),
             matching_child->tokens.begin() + static_cast<std::ptrdiff_t>(common));
+        middle->ref_count.store(
+            matching_child->ref_count.load(std::memory_order_relaxed),
+            std::memory_order_relaxed);
         matching_child->parent = middle.get();
         middle->first_child.store(matching_child, std::memory_order_relaxed);
         middle->next_sibling = matching_child->next_sibling;
@@ -225,6 +228,9 @@ Node* KvRadixTree::split(Node* node, std::uint32_t edge_offset) {
                                          std::nullopt);
     node->tokens.erase(node->tokens.begin(),
                        node->tokens.begin() + edge_offset);
+    middle->ref_count.store(
+        node->ref_count.load(std::memory_order_relaxed),
+        std::memory_order_relaxed);
     Node* parent = node->parent;
     Node* previous = nullptr;
     Node* child = parent->first_child.load(std::memory_order_relaxed);

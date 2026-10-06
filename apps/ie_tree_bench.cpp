@@ -172,8 +172,8 @@ struct RunResult {
         for (std::size_t branch = 0; branch < config.branches; ++branch) {
             sequence_ids[branch] = static_cast<BackendSeqId>(branch);
         }
-        std::vector<TokenId> next_tokens(config.branches,
-                                          prompt.back());
+        std::vector<TokenId> next_tokens =
+            make_tokens(config.branches, model.info().n_vocab, config.prefix);
         std::vector<std::vector<TokenId>> generated(config.branches);
         for (auto& branch_tokens : generated) {
             branch_tokens.reserve(config.suffix);
@@ -241,19 +241,21 @@ struct RunResult {
         candidates.push_back(predicted - 256);
     }
     candidates.push_back(predicted);
-    for (std::uint32_t candidate = 256; candidate <= predicted + 4096;
-         candidate += 256) {
-        if (std::find(candidates.begin(), candidates.end(), candidate) ==
-            candidates.end()) {
-            candidates.push_back(candidate);
-        }
-    }
     std::optional<RunResult> result;
     for (const std::uint32_t candidate : candidates) {
         auto attempt = run_once(model, config, candidate);
-        if (attempt.has_value() &&
-            (!result.has_value() || attempt->n_ctx < result->n_ctx)) {
+        if (attempt.has_value()) {
             result = std::move(attempt);
+        }
+    }
+    if (result.has_value()) {
+        return result;
+    }
+    for (std::uint32_t candidate = predicted + 256;
+         candidate <= predicted + 4096; candidate += 256) {
+        auto attempt = run_once(model, config, candidate);
+        if (attempt.has_value()) {
+            return attempt;
         }
     }
     return result;
@@ -281,7 +283,8 @@ struct CorrectnessResult {
         if (context.prefill(0, prompt, 0) != DecodeStatus::Ok) {
             return std::nullopt;
         }
-        TokenId next_token = prompt.back();
+        TokenId next_token =
+            make_tokens(config.branches, model.info().n_vocab, config.prefix)[branch];
         std::vector<TokenId> independent;
         independent.reserve(config.suffix);
         for (std::size_t step = 0; step < config.suffix; ++step) {

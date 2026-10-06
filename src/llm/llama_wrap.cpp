@@ -34,6 +34,7 @@ llama_batch make_batch(std::span<const llama_seq_id> seqs,
     }
     auto batch = llama_batch_init(static_cast<int32_t>(tokens.size()), 0,
                                   static_cast<int32_t>(n_seq_max));
+    batch.n_tokens = static_cast<int32_t>(tokens.size());
     for (std::size_t index = 0; index < tokens.size(); ++index) {
         batch.token[index] = tokens[index];
         batch.pos[index] = positions[index];

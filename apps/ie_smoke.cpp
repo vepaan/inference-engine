@@ -47,7 +47,10 @@ int main(int argc, char** argv) {
             const std::array<llama_token, 1> tokens{next_token};
             const std::array<llama_pos, 1> positions{position};
             const auto output = context.decode_lockstep(seqs, tokens, positions);
-            next_token = output.front();
+            if (output.status != inference_engine::llm::DecodeStatus::Ok) {
+                throw std::runtime_error("decode failed");
+            }
+            next_token = output.tokens.front();
             generated.push_back(next_token);
         }
         const auto elapsed = std::chrono::duration<double, std::milli>(

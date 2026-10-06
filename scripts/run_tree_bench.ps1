@@ -33,10 +33,17 @@ function Invoke-Case {
         "--suffix", $Suffix,
         "--single"
     )
-    $output = & $executable @arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $logPath = [System.IO.Path]::GetTempFileName()
+    try {
+        & $executable @arguments 1> $logPath 2>&1
+        $exitCode = $LASTEXITCODE
+        $output = Get-Content -Path $logPath
+    } finally {
+        Remove-Item -Force $logPath -ErrorAction SilentlyContinue
+    }
+    if ($exitCode -ne 0) {
         $output | ForEach-Object { Write-Host $_ }
-        throw "Benchmark failed with exit code $LASTEXITCODE"
+        throw "Benchmark failed with exit code $exitCode"
     }
     $output | ForEach-Object { Write-Host $_ }
     $csvLine = $output | Where-Object { "$($_)" -like "CSV,*" } | Select-Object -Last 1

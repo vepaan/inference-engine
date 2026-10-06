@@ -208,8 +208,7 @@ Node* KvRadixTree::fork(Node* at, BackendSeqId preferred_seq) {
         if (!destination.has_value()) {
             throw std::runtime_error("no physical sequence slot is available");
         }
-        backend_->share(source->holder->seq, destination.value(), 0,
-                        static_cast<BackendPos>(depth(at)));
+        backend_->share(source->holder->seq, destination.value(), -1, -1);
     }
     retain_path(at);
     return at;

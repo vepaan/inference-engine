@@ -34,11 +34,14 @@ function Invoke-Case {
         "--single"
     )
     $logPath = [System.IO.Path]::GetTempFileName()
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
+        $ErrorActionPreference = "Continue"
         & $executable @arguments 1> $logPath 2>&1
         $exitCode = $LASTEXITCODE
         $output = Get-Content -Path $logPath
     } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
         Remove-Item -Force $logPath -ErrorAction SilentlyContinue
     }
     if ($exitCode -ne 0) {

@@ -131,6 +131,8 @@ struct RunResult {
             const SeqRange prefix_holder{
                 0, 0, static_cast<BackendPos>(config.prefix)};
             if (context.prefill(0, prompt, 0) != DecodeStatus::Ok) {
+                std::cerr << "run_once n_ctx=" << n_ctx
+                          << ": tree prefill failed\n";
                 return std::nullopt;
             }
             prefix_node = tree->append(tree->root(), prompt, prefix_holder);
@@ -138,6 +140,8 @@ struct RunResult {
             for (std::size_t branch = 0; branch < config.branches; ++branch) {
                 if (context.prefill(static_cast<BackendSeqId>(branch), prompt, 0) !=
                     DecodeStatus::Ok) {
+                    std::cerr << "run_once n_ctx=" << n_ctx
+                              << ": naive prefill failed\n";
                     return std::nullopt;
                 }
             }
@@ -191,10 +195,14 @@ struct RunResult {
                                   std::chrono::steady_clock::now() - step_start)
                                   .count());
             if (result.status == DecodeStatus::NoKvSlot) {
+                std::cerr << "run_once n_ctx=" << n_ctx
+                          << ": lockstep decode reported NoKvSlot\n";
                 return std::nullopt;
             }
             if (result.status != DecodeStatus::Ok ||
                 result.tokens.size() != config.branches) {
+                std::cerr << "run_once n_ctx=" << n_ctx
+                          << ": lockstep decode returned Error\n";
                 return std::nullopt;
             }
             next_tokens = result.tokens;
@@ -217,6 +225,8 @@ struct RunResult {
                 static_cast<void>(tree->commit(prefix_node, generated[branch], holder));
             }
             if (!tree->validate()) {
+                std::cerr << "run_once n_ctx=" << n_ctx
+                          << ": tree validation failed after commit\n";
                 return std::nullopt;
             }
             for (std::size_t branch = 0; branch < config.branches; ++branch) {

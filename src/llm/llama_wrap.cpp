@@ -145,16 +145,14 @@ DecodeStatus Context::prefill(llama_seq_id seq,
     return DecodeStatus::Ok;
 }
 
-std::vector<llama_token> Context::decode_lockstep(
+DecodeResult Context::decode_lockstep(
     std::span<const llama_seq_id> seqs, std::span<const llama_token> tokens,
     std::span<const llama_pos> positions) {
     auto batch = make_batch(seqs, tokens, positions, n_seq_max_, true);
     const DecodeStatus status = decode(batch);
     if (status != DecodeStatus::Ok) {
         llama_batch_free(batch);
-        throw std::runtime_error(status == DecodeStatus::NoKvSlot
-                                     ? "llama KV cache is full"
-                                     : "llama decode failed");
+        return {status, {}};
     }
     std::vector<llama_token> result;
     result.reserve(tokens.size());
@@ -163,13 +161,21 @@ std::vector<llama_token> Context::decode_lockstep(
             context_, static_cast<int32_t>(index));
         if (logits == nullptr) {
             llama_batch_free(batch);
-            throw std::runtime_error("llama returned null logits");
+            return {DecodeStatus::Error, {}};
         }
         const auto* max_it = std::max_element(logits, logits + n_vocab_);
         result.push_back(static_cast<llama_token>(max_it - logits));
     }
     llama_batch_free(batch);
-    return result;
+    return {DecodeStatus::Ok, std::move(result)};
+}
+
+std::vector<float> Context::logits_ith(std::int32_t index) const {
+    float* logits = llama_get_logits_ith(context_, index);
+    if (logits == nullptr) {
+        throw std::runtime_error("llama returned null logits");
+    }
+    return std::vector<float>(logits, logits + n_vocab_);
 }
 
 void Context::seq_cp(llama_seq_id src_seq, llama_seq_id dst_seq, llama_pos p0,

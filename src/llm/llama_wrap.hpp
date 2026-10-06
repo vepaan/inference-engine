@@ -43,6 +43,11 @@ enum class DecodeStatus {
     Error,
 };
 
+struct DecodeResult {
+    DecodeStatus status;
+    std::vector<llama_token> tokens;
+};
+
 class Context {
 public:
     Context(const Model& model, std::uint32_t n_ctx, std::uint32_t n_batch,
@@ -55,9 +60,10 @@ public:
     [[nodiscard]] DecodeStatus prefill(llama_seq_id seq,
                                        std::span<const llama_token> tokens,
                                        llama_pos pos0);
-    [[nodiscard]] std::vector<llama_token> decode_lockstep(
+    [[nodiscard]] DecodeResult decode_lockstep(
         std::span<const llama_seq_id> seqs, std::span<const llama_token> tokens,
         std::span<const llama_pos> positions);
+    [[nodiscard]] std::vector<float> logits_ith(std::int32_t index) const;
     void seq_cp(llama_seq_id src_seq, llama_seq_id dst_seq, llama_pos p0,
                 llama_pos p1);
     [[nodiscard]] bool seq_rm(llama_seq_id seq, llama_pos p0, llama_pos p1);

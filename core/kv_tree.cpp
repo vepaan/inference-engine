@@ -80,6 +80,13 @@ Node* KvRadixTree::append(Node* parent,
     auto child = std::make_unique<Node>(parent, edge_tokens, edge_holder);
     std::lock_guard lock(structure_mutex_);
     Node* existing = parent->first_child.load(std::memory_order_relaxed);
+    if (existing == nullptr && parent->holder.has_value()) {
+        if (!edge_holder.has_value()) {
+            edge_holder = parent->holder;
+            child->holder = edge_holder;
+        }
+        parent->holder.reset();
+    }
     if (!edge_tokens.empty()) {
         for (Node* sibling = existing; sibling != nullptr;
              sibling = sibling->next_sibling) {
@@ -133,6 +140,14 @@ Node* KvRadixTree::insert_sequence(std::span<const TokenId> tokens,
 Node* KvRadixTree::commit(Node* parent,
                           std::span<const TokenId> edge_tokens,
                           SeqRange holder) {
+    if (parent == nullptr) {
+        throw std::invalid_argument("cannot commit to a null radix node");
+    }
+    if (parent->holder.has_value() &&
+        parent->ref_count.load(std::memory_order_relaxed) == 0) {
+        std::lock_guard lock(structure_mutex_);
+        retain_path(parent);
+    }
     Node* leaf = append(parent, edge_tokens, holder);
     std::lock_guard lock(structure_mutex_);
     leaf->ref_count.store(1, std::memory_order_relaxed);
@@ -184,7 +199,9 @@ Node* KvRadixTree::fork(Node* at, BackendSeqId preferred_seq) {
     if (source == nullptr || !source->holder.has_value()) {
         throw std::invalid_argument("cannot fork a node without a leaf holder");
     }
-    if (backend_ != nullptr) {
+    const bool same_source_slot =
+        preferred_seq >= 0 && preferred_seq == source->holder->seq;
+    if (backend_ != nullptr && !same_source_slot) {
         const auto destination = slots_.acquire(
             preferred_seq >= 0 ? std::optional<BackendSeqId>(preferred_seq)
                                : std::nullopt);

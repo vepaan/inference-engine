@@ -145,4 +145,31 @@ if(IE_WITH_LLAMA)
 			-Werror
 		)
 	endif()
+
+	add_executable(ie_tree_bench
+		apps/ie_tree_bench.cpp
+	)
+	target_compile_features(ie_tree_bench PRIVATE cxx_std_20)
+	target_include_directories(ie_tree_bench PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/core
+		${CMAKE_CURRENT_SOURCE_DIR}/src/llm
+	)
+	target_link_libraries(ie_tree_bench PRIVATE ie_llm kv_tree)
+	if(WIN32)
+		target_link_libraries(ie_tree_bench PRIVATE psapi)
+	endif()
+
+	if(MSVC)
+		target_compile_options(ie_tree_bench PRIVATE /W4 /WX /permissive-)
+	else()
+		target_compile_options(ie_tree_bench PRIVATE
+			-Wall
+			-Wextra
+			-Wpedantic
+			-Wconversion
+			-Wsign-conversion
+			-Wshadow
+			-Werror
+		)
+	endif()
 endif()

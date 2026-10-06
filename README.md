@@ -1,30 +1,33 @@
-# Inference Engine MVP
+# Inference Engine
 
-A standalone C++20 prototype for measuring KV-cache memory savings when agent branches share a prefix. It uses a mock allocator, so it does not load a model or depend on llama.cpp at runtime.
+A C++20 prototype for measuring shared-prefix KV-cache behavior in agentic tree search. It supports a dependency-free mock path and an opt-in CPU llama.cpp path.
 
 ## Current MVP
 
-- `KvRadixTree` stores shared token edges and dummy KV page IDs.
-- Atomic node reference counts model branches retaining a shared prefix.
-- `fork()` retains the existing path without copying its page IDs.
-- `MockKvAllocator` accounts for KV bytes at `32 KiB` per token.
-- The benchmark compares eight independent branches with one shared `2048`-token prefix and eight `200`-token suffixes.
+- `KvRadixTree` stores token edges and leaf `SeqRange` holders.
+- Atomic reference counts, split-on-insert, slot allocation, release, LRU idle-leaf eviction, and validation.
+- `MockBackend` reproduces the original accounting benchmark.
+- The optional llama.cpp wrapper supports CPU prefill, greedy lockstep decode, sequence copy/remove, and model KV metadata.
+- `ie_tree_bench` runs one fresh-process real-model arm; `scripts/run_tree_bench.ps1` aggregates the sweep.
 
-This is a memory-accounting prototype. Structural updates are protected by a mutex; the implementation does not yet include EBR reclamation, eviction, slot multiplexing, real attention, or llama.cpp integration.
+The current tree uses a mutex for structural operations. Epoch reclamation, real-model measurements, and profiling extras remain pending.
 
 ## Requirements
 
 - Windows with Visual Studio 2022 and CMake 3.20 or newer
 - A C++20-capable compiler
+- The vendored llama.cpp submodule for real-model targets
+- GGUF files at `models/SmolLM2-135M-Instruct-Q4_K_M.gguf` and `models/Llama-3.2-1B-Instruct-Q4_K_M.gguf` for smoke/benchmark runs
 
 ## Build and run
 
-From the repository root in PowerShell:
+From the repository root in PowerShell, the mock build is:
 
 ```powershell
 cmake -S . -B build
-cmake --build build --config Release
+cmake --build build --config Release --target memory_bench kv_tree_tests
 .\build\Release\memory_bench.exe
+ctest --test-dir build -C Release --output-on-failure
 ```
 
 Expected result for the built-in workload:
@@ -36,15 +39,46 @@ peak allocation reduction: 79.72%
 shared prefix ref_count: 8
 ```
 
-The `build/` directory is ignored by Git. To try another workload, edit the constants near the top of `bench/main_bench.cpp`: branch count, prefix length, suffix length, or bytes per token.
+The `build/` directory is ignored by Git. The golden benchmark output is covered by CTest.
+
+To build the real backend and smoke app:
+
+```powershell
+git submodule update --init --recursive
+cmake -S . -B build -DIE_WITH_LLAMA=ON -DBUILD_TESTING=ON
+cmake --build build --config Release --target ie_smoke ie_tree_bench
+.\build\Release\ie_smoke.exe models\SmolLM2-135M-Instruct-Q4_K_M.gguf
+```
+
+Run one tree benchmark case:
+
+```powershell
+.\build\Release\ie_tree_bench.exe --model models\SmolLM2-135M-Instruct-Q4_K_M.gguf --arm tree --b 8 --prefix 2048 --suffix 200 --single
+```
+
+Run the full fresh-process sweep:
+
+```powershell
+.\scripts\run_tree_bench.ps1 -BuildDir build\Release
+```
+
+## Status
+
+| Level | Path | Status |
+| --- | --- | --- |
+| L0 | Mock backend and radix tree | Implemented; golden output and CTest pass |
+| L1 | llama.cpp backend and real-model benchmark | Compiled; runtime measurements require the GGUF files |
 
 ## Layout
 
 ```text
-core/kv_tree.hpp       Radix-tree interface and node definition
-core/kv_tree.cpp       Tree ownership, append, fork, matching, and traversal
-bench/memory_mock.hpp  KV byte-accounting allocator
-bench/main_bench.cpp  Fixed workload and benchmark entry point
+core/kv_backend.hpp   Backend interface and mock accounting backend
+core/kv_tree.hpp      Radix-tree interface and node definition
+core/kv_tree.cpp      Tree ownership, split, fork, release, eviction, and validation
+src/llm/              llama.cpp wrapper and backend adapter
+apps/                 Smoke and real-model tree benchmark entry points
+tests/                Property, differential, split, slot, and golden tests
+scripts/              Fresh-process benchmark sweep
 ```
 
 The memory comparison is:

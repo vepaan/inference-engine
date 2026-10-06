@@ -19,6 +19,19 @@ The current tree uses a mutex for structural operations. Epoch reclamation, real
 - The vendored llama.cpp submodule for real-model targets
 - GGUF files at `models/SmolLM2-135M-Instruct-Q4_K_M.gguf` and `models/Llama-3.2-1B-Instruct-Q4_K_M.gguf` for smoke/benchmark runs
 
+## Download models
+
+Install the Hugging Face CLI and download the exact files into the ignored `models/` directory:
+
+```powershell
+py -m pip install -U huggingface_hub
+hf download bartowski/SmolLM2-135M-Instruct-GGUF SmolLM2-135M-Instruct-Q4_K_M.gguf --local-dir models
+hf auth login
+hf download bartowski/Llama-3.2-1B-Instruct-GGUF Llama-3.2-1B-Instruct-Q4_K_M.gguf --local-dir models
+```
+
+The SmolLM2 repository is public. Llama 3.2 requires accepting Meta's license on the model page and authenticating the Hugging Face CLI. Keep the access token private.
+
 ## Build and run
 
 From the repository root in PowerShell, the mock build is:

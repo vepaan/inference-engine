@@ -155,7 +155,6 @@ Node* KvRadixTree::append(Node* parent,
     }
     auto child = std::make_unique<Node>(attach_parent, remaining, edge_holder);
     Node* existing = attach_parent->first_child.load(std::memory_order_relaxed);
-    }
     child->next_sibling = existing;
     Node* result = child.release();
     attach_parent->first_child.store(result, std::memory_order_release);

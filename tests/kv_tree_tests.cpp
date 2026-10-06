@@ -137,6 +137,22 @@ IE_TEST_CASE(slot_exhaustion_is_reported) {
     IE_CHECK(exhausted);
 }
 
+IE_TEST_CASE(commit_transfers_prefix_handle_to_leaf) {
+    inference_engine::MockBackend backend(1);
+    KvRadixTree tree(&backend, 2);
+    const std::vector<TokenId> prefix{30, 31};
+    const SeqRange source{0, 0, 2};
+    Node* prefix_node = tree.append(tree.root(), prefix, source);
+    static_cast<void>(tree.fork(prefix_node, 0));
+    static_cast<void>(tree.fork(prefix_node, 1));
+
+    const std::vector<TokenId> first_suffix{40};
+    const std::vector<TokenId> second_suffix{41};
+    static_cast<void>(tree.commit(prefix_node, first_suffix, {0, 0, 3}));
+    static_cast<void>(tree.commit(prefix_node, second_suffix, {1, 0, 3}));
+    IE_CHECK(tree.validate());
+}
+
 }  // namespace
 
 int main() { return minitest::run_all(); }

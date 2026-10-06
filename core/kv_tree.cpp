@@ -77,29 +77,88 @@ Node* KvRadixTree::append(Node* parent,
         throw std::invalid_argument("cannot append to a null radix node");
     }
 
-    auto child = std::make_unique<Node>(parent, edge_tokens, edge_holder);
     std::lock_guard lock(structure_mutex_);
-    Node* existing = parent->first_child.load(std::memory_order_relaxed);
-    if (existing == nullptr && parent->holder.has_value()) {
-        if (!edge_holder.has_value()) {
-            edge_holder = parent->holder;
-            child->holder = edge_holder;
-        }
-        parent->holder.reset();
-    }
-    if (!edge_tokens.empty()) {
-        for (Node* sibling = existing; sibling != nullptr;
-             sibling = sibling->next_sibling) {
+    Node* attach_parent = parent;
+    std::span<const TokenId> remaining = edge_tokens;
+    while (!remaining.empty()) {
+        Node* matching_child = nullptr;
+        for (Node* sibling = attach_parent->first_child.load(
+                 std::memory_order_relaxed);
+             sibling != nullptr; sibling = sibling->next_sibling) {
             if (!sibling->tokens.empty() &&
-                sibling->tokens.front() == edge_tokens.front()) {
-                throw std::invalid_argument(
-                    "siblings must have distinct first tokens");
+                sibling->tokens.front() == remaining.front()) {
+                matching_child = sibling;
+                break;
             }
         }
+
+        if (matching_child == nullptr) {
+            break;
+        }
+
+        const std::size_t common_limit =
+            std::min(matching_child->tokens.size(), remaining.size());
+        std::size_t common = 0;
+        while (common < common_limit &&
+               matching_child->tokens[common] == remaining[common]) {
+            ++common;
+        }
+        if (common == matching_child->tokens.size()) {
+            if (common == remaining.size()) {
+                if (edge_holder.has_value()) {
+                    matching_child->holder = edge_holder;
+                    matching_child->ref_count.fetch_add(
+                        1, std::memory_order_relaxed);
+                }
+                return matching_child;
+            }
+            attach_parent = matching_child;
+            remaining = remaining.subspan(common);
+            continue;
+        }
+
+        auto middle = std::make_unique<Node>(
+            attach_parent,
+            std::span<const TokenId>(matching_child->tokens.data(), common),
+            std::nullopt);
+        Node* previous = nullptr;
+        Node* sibling = attach_parent->first_child.load(
+            std::memory_order_relaxed);
+        while (sibling != matching_child) {
+            previous = sibling;
+            sibling = sibling->next_sibling;
+        }
+        matching_child->tokens.erase(
+            matching_child->tokens.begin(),
+            matching_child->tokens.begin() + static_cast<std::ptrdiff_t>(common));
+        matching_child->parent = middle.get();
+        middle->first_child.store(matching_child, std::memory_order_relaxed);
+        middle->next_sibling = matching_child->next_sibling;
+        matching_child->next_sibling = nullptr;
+        Node* middle_ptr = middle.release();
+        if (previous == nullptr) {
+            attach_parent->first_child.store(middle_ptr,
+                                             std::memory_order_release);
+        } else {
+            previous->next_sibling = middle_ptr;
+        }
+        attach_parent = middle_ptr;
+        remaining = remaining.subspan(common);
+    }
+
+    if (attach_parent->first_child.load(std::memory_order_relaxed) == nullptr &&
+        attach_parent->holder.has_value()) {
+        if (!edge_holder.has_value()) {
+            edge_holder = attach_parent->holder;
+        }
+        attach_parent->holder.reset();
+    }
+    auto child = std::make_unique<Node>(attach_parent, remaining, edge_holder);
+    Node* existing = attach_parent->first_child.load(std::memory_order_relaxed);
     }
     child->next_sibling = existing;
     Node* result = child.release();
-    parent->first_child.store(result, std::memory_order_release);
+    attach_parent->first_child.store(result, std::memory_order_release);
     if (edge_holder.has_value()) {
         result->last_used_epoch = ++logical_clock_;
     }

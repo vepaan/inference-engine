@@ -4,6 +4,8 @@ project(inference_engine_mvp LANGUAGES CXX)
 
 option(IE_WITH_LLAMA "Build the real llama.cpp backend and smoke app" OFF)
 
+include(CTest)
+
 add_library(kv_tree STATIC
 	core/kv_tree.cpp
 )
@@ -54,6 +56,41 @@ else()
 		-Wshadow
 		-Werror
 	)
+endif()
+
+if(BUILD_TESTING)
+	add_executable(kv_tree_tests
+		tests/kv_tree_tests.cpp
+	)
+	target_compile_features(kv_tree_tests PRIVATE cxx_std_20)
+	target_include_directories(kv_tree_tests PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/core
+		${CMAKE_CURRENT_SOURCE_DIR}/tests
+	)
+	target_link_libraries(kv_tree_tests PRIVATE kv_tree)
+
+	if(MSVC)
+		target_compile_options(kv_tree_tests PRIVATE /W4 /WX /permissive-)
+	else()
+		target_compile_options(kv_tree_tests PRIVATE
+			-Wall
+			-Wextra
+			-Wpedantic
+			-Wconversion
+			-Wsign-conversion
+			-Wshadow
+			-Werror
+		)
+	endif()
+
+	add_test(NAME kv_tree_tests COMMAND kv_tree_tests)
+	if(WIN32)
+		add_test(NAME memory_bench_golden
+			COMMAND powershell -NoProfile -ExecutionPolicy Bypass
+				-File ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_golden.ps1
+				$<TARGET_FILE:memory_bench>
+		)
+	endif()
 endif()
 
 if(IE_WITH_LLAMA)

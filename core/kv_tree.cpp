@@ -94,7 +94,6 @@ Node* KvRadixTree::append(Node* parent,
     Node* result = child.release();
     parent->first_child.store(result, std::memory_order_release);
     if (edge_holder.has_value()) {
-        result->ref_count.store(1, std::memory_order_relaxed);
         result->last_used_epoch = ++logical_clock_;
     }
     return result;
@@ -113,6 +112,12 @@ Node* KvRadixTree::insert_sequence(std::span<const TokenId> tokens,
         if (edge_offset > 0 && edge_offset < parent->tokens.size()) {
             parent = split(parent, static_cast<std::uint32_t>(edge_offset));
         }
+    }
+    if (parent != root_ && match.matched_tokens == tokens.size() &&
+        depth(parent) > tokens.size()) {
+        const std::size_t edge_offset =
+            tokens.size() - depth(parent->parent);
+        return split(parent, static_cast<std::uint32_t>(edge_offset));
     }
     const std::size_t consumed = depth(parent);
     if (consumed == tokens.size()) {
@@ -179,13 +184,13 @@ Node* KvRadixTree::fork(Node* at, BackendSeqId preferred_seq) {
     if (source == nullptr || !source->holder.has_value()) {
         throw std::invalid_argument("cannot fork a node without a leaf holder");
     }
-    const auto destination = slots_.acquire(
-        preferred_seq >= 0 ? std::optional<BackendSeqId>(preferred_seq)
-                           : std::nullopt);
-    if (!destination.has_value()) {
-        throw std::runtime_error("no physical sequence slot is available");
-    }
     if (backend_ != nullptr) {
+        const auto destination = slots_.acquire(
+            preferred_seq >= 0 ? std::optional<BackendSeqId>(preferred_seq)
+                               : std::nullopt);
+        if (!destination.has_value()) {
+            throw std::runtime_error("no physical sequence slot is available");
+        }
         backend_->share(source->holder->seq, destination.value(), 0,
                         static_cast<BackendPos>(depth(at)));
     }
@@ -263,12 +268,21 @@ KvRadixTree::Match KvRadixTree::match_prefix(
     while (matched < tokens.size()) {
         Node* child = current->first_child.load(std::memory_order_acquire);
         Node* matching_child = nullptr;
+        bool partial_edge = false;
         while (child != nullptr) {
             const std::size_t edge_size = child->tokens.size();
-            if (matched + edge_size <= tokens.size() &&
-                std::equal(child->tokens.begin(), child->tokens.end(),
-                           tokens.begin() + static_cast<std::ptrdiff_t>(matched))) {
+            const std::size_t remaining = tokens.size() - matched;
+            const std::size_t common = std::min(edge_size, remaining);
+            std::size_t equal_tokens = 0;
+            while (equal_tokens < common &&
+                   child->tokens[equal_tokens] ==
+                       tokens[matched + equal_tokens]) {
+                ++equal_tokens;
+            }
+            if (equal_tokens > 0) {
                 matching_child = child;
+                matched += equal_tokens;
+                partial_edge = equal_tokens < edge_size;
                 break;
             }
             child = child->next_sibling;
@@ -277,8 +291,10 @@ KvRadixTree::Match KvRadixTree::match_prefix(
         if (matching_child == nullptr) {
             break;
         }
-        matched += matching_child->tokens.size();
         current = matching_child;
+        if (partial_edge) {
+            break;
+        }
     }
 
     if (matched > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {

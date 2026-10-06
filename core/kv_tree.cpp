@@ -134,6 +134,9 @@ Node* KvRadixTree::append(Node* parent,
         middle->ref_count.store(
             matching_child->ref_count.load(std::memory_order_relaxed),
             std::memory_order_relaxed);
+        if (edge_holder.has_value()) {
+            middle->ref_count.fetch_add(1, std::memory_order_relaxed);
+        }
         matching_child->parent = middle.get();
         middle->first_child.store(matching_child, std::memory_order_relaxed);
         middle->next_sibling = matching_child->next_sibling;

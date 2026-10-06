@@ -1,0 +1,1 @@
+model,arm,b,P,S,n_ctx_min,n_ctx_pred,kappa_bytes,kv_bytes_min,rho_meas,rho_pred,prefill_ms,fork_us_p50,fork_us_p99,step_us_p50,step_us_p90,step_us_p99,jitter_us,tok_per_s,private_bytes,peak_ws_bytes,max_abs_logit_diff,token_match_rate

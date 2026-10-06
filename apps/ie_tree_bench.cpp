@@ -229,7 +229,9 @@ struct RunResult {
         return RunResult{context.n_ctx(), prefill_ms, std::move(fork_us),
                          std::move(step_us), std::move(generated),
                          std::move(final_logits), process_memory()};
-    } catch (const std::exception&) {
+    } catch (const std::exception& error) {
+        std::cerr << "run_once n_ctx=" << n_ctx << ": " << error.what()
+                  << "\n";
         return std::nullopt;
     }
 }

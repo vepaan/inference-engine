@@ -64,11 +64,13 @@ if(IE_WITH_LLAMA)
 
 	add_library(ie_llm STATIC
 		src/llm/llama_wrap.cpp
+		src/llm/llama_backend.cpp
 	)
 
 	target_compile_features(ie_llm PUBLIC cxx_std_20)
 	target_include_directories(ie_llm
 		PUBLIC
+			${CMAKE_CURRENT_SOURCE_DIR}/core
 			${CMAKE_CURRENT_SOURCE_DIR}/src/llm
 	)
 	target_link_libraries(ie_llm PUBLIC llama)

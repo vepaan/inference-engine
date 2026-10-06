@@ -4,33 +4,34 @@
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <span>
 #include <vector>
+
+#include "kv_backend.hpp"
 
 namespace inference_engine {
 
 using TokenId = std::int32_t;
-using PageId = std::uint32_t;
-
 struct Node {
     std::atomic<std::uint32_t> ref_count{0};
     std::atomic<Node*> first_child{nullptr};
     Node* next_sibling{nullptr};
     Node* parent{nullptr};
     std::vector<TokenId> tokens;
-    std::vector<PageId> page_ids;
+    std::optional<SeqRange> holder;
 
     Node(Node* parent_node, std::span<const TokenId> edge_tokens,
-         std::span<const PageId> edge_pages);
+         std::optional<SeqRange> edge_holder);
 };
 
-static_assert(sizeof(Node) == 80, "Node layout changed; update the report");
+static_assert(sizeof(SeqRange) == 12);
 static_assert(offsetof(Node, ref_count) == 0);
 static_assert(offsetof(Node, first_child) == 8);
 static_assert(offsetof(Node, next_sibling) == 16);
 static_assert(offsetof(Node, parent) == 24);
 static_assert(offsetof(Node, tokens) == 32);
-static_assert(offsetof(Node, page_ids) == 56);
+static_assert(offsetof(Node, holder) == 56);
 
 class KvRadixTree {
 public:
@@ -50,7 +51,7 @@ public:
 
     [[nodiscard]] Node* append(Node* parent,
                                 std::span<const TokenId> edge_tokens,
-                                std::span<const PageId> edge_pages);
+                                std::optional<SeqRange> edge_holder = std::nullopt);
 
     // Retains the path to a logical branch. KV pages remain owned by the tree.
     [[nodiscard]] Node* fork(Node* at, std::uint32_t seq_id);

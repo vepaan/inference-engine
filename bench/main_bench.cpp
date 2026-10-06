@@ -1,16 +1,17 @@
 #include "kv_tree.hpp"
-#include "memory_mock.hpp"
+#include "kv_backend.hpp"
 
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <vector>
 
 namespace {
 
 using inference_engine::KvRadixTree;
-using inference_engine::MockKvAllocator;
+using inference_engine::MockBackend;
 using inference_engine::TokenId;
 
 constexpr std::size_t kBranchFactor = 8;
@@ -35,32 +36,40 @@ constexpr std::size_t kBytesPerToken = 32U * 1024U;
 }  // namespace
 
 int main() {
-    MockKvAllocator naive_allocator(kBytesPerToken);
+    MockBackend naive_allocator(kBytesPerToken);
     for (std::size_t branch = 0; branch < kBranchFactor; ++branch) {
-        static_cast<void>(naive_allocator.allocate_tokens(kSharedPrefixTokens));
-        static_cast<void>(naive_allocator.allocate_tokens(kSuffixTokens));
+        static_cast<void>(naive_allocator.allocate(0, kSharedPrefixTokens));
+        static_cast<void>(naive_allocator.allocate(0, kSuffixTokens));
     }
 
-    MockKvAllocator shared_allocator(kBytesPerToken);
+    MockBackend shared_allocator(kBytesPerToken);
     KvRadixTree tree;
     const std::vector<TokenId> prefix_tokens =
         make_tokens(kSharedPrefixTokens, 0);
-    const std::vector<inference_engine::PageId> prefix_pages =
-        shared_allocator.allocate_tokens(kSharedPrefixTokens);
+    const inference_engine::SeqRange prefix_range =
+        shared_allocator.allocate(0, kSharedPrefixTokens);
     inference_engine::Node* prefix = tree.append(
-        tree.root(), prefix_tokens, prefix_pages);
+        tree.root(), prefix_tokens, std::nullopt);
 
     for (std::size_t branch = 0; branch < kBranchFactor; ++branch) {
         const std::vector<TokenId> suffix_tokens =
             make_tokens(kSuffixTokens, static_cast<TokenId>(branch + 1));
-        const std::vector<inference_engine::PageId> suffix_pages =
-            shared_allocator.allocate_tokens(kSuffixTokens);
+        static_cast<void>(shared_allocator.allocate(
+            static_cast<inference_engine::BackendSeqId>(branch + 1),
+            kSuffixTokens));
+        const std::optional<inference_engine::SeqRange> holder =
+            inference_engine::SeqRange{
+                static_cast<inference_engine::BackendSeqId>(branch + 1),
+                0,
+                static_cast<inference_engine::BackendPos>(
+                    kSharedPrefixTokens + kSuffixTokens)};
         inference_engine::Node* leaf =
-            tree.append(prefix, suffix_tokens, suffix_pages);
+            tree.append(prefix, suffix_tokens, holder);
         static_cast<void>(
             tree.fork(leaf, static_cast<std::uint32_t>(branch)));
     }
 
+    static_cast<void>(prefix_range);
     const double naive_megabytes = to_megabytes(naive_allocator.allocated_bytes());
     const double shared_megabytes = to_megabytes(shared_allocator.allocated_bytes());
     const double reduction =

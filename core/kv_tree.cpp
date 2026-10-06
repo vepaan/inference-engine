@@ -8,11 +8,11 @@
 namespace inference_engine {
 
 Node::Node(Node* parent_node, std::span<const TokenId> edge_tokens,
-           std::span<const PageId> edge_pages)
+         std::optional<SeqRange> edge_holder)
     : parent(parent_node), tokens(edge_tokens.begin(), edge_tokens.end()),
-      page_ids(edge_pages.begin(), edge_pages.end()) {}
+    holder(edge_holder) {}
 
-KvRadixTree::KvRadixTree() : root_(new Node(nullptr, {}, {})) {}
+KvRadixTree::KvRadixTree() : root_(new Node(nullptr, {}, std::nullopt)) {}
 
 KvRadixTree::~KvRadixTree() { destroy_subtree(root_); }
 
@@ -22,12 +22,12 @@ const Node* KvRadixTree::root() const noexcept { return root_; }
 
 Node* KvRadixTree::append(Node* parent,
                           std::span<const TokenId> edge_tokens,
-                          std::span<const PageId> edge_pages) {
+                          std::optional<SeqRange> edge_holder) {
     if (parent == nullptr) {
         throw std::invalid_argument("cannot append to a null radix node");
     }
 
-    auto* child = new Node(parent, edge_tokens, edge_pages);
+    auto* child = new Node(parent, edge_tokens, edge_holder);
     std::lock_guard lock(structure_mutex_);
     Node* first_child = parent->first_child.load(std::memory_order_relaxed);
     child->next_sibling = first_child;

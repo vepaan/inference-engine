@@ -168,6 +168,21 @@ IE_TEST_CASE(commit_splits_shared_generated_prefix) {
     IE_CHECK(tree.validate());
 }
 
+IE_TEST_CASE(commit_merges_identical_generated_edge) {
+    inference_engine::MockBackend backend(1);
+    KvRadixTree tree(&backend, 2);
+    const std::vector<TokenId> prefix{30, 31};
+    Node* prefix_node = tree.append(tree.root(), prefix, SeqRange{0, 0, 2});
+    static_cast<void>(tree.fork(prefix_node, 0));
+    static_cast<void>(tree.fork(prefix_node, 1));
+
+    static_cast<void>(tree.commit(prefix_node, std::vector<TokenId>{40},
+                                  SeqRange{0, 0, 3}));
+    static_cast<void>(tree.commit(prefix_node, std::vector<TokenId>{40},
+                                  SeqRange{1, 0, 3}));
+    IE_CHECK(tree.validate());
+}
+
 }  // namespace
 
 int main() { return minitest::run_all(); }

@@ -107,8 +107,6 @@ Node* KvRadixTree::append(Node* parent,
             if (common == remaining.size()) {
                 if (edge_holder.has_value()) {
                     matching_child->holder = edge_holder;
-                    matching_child->ref_count.fetch_add(
-                        1, std::memory_order_relaxed);
                 }
                 return matching_child;
             }
@@ -214,7 +212,7 @@ Node* KvRadixTree::commit(Node* parent,
     }
     Node* leaf = append(parent, edge_tokens, holder);
     std::lock_guard lock(structure_mutex_);
-    leaf->ref_count.store(1, std::memory_order_relaxed);
+    leaf->ref_count.fetch_add(1, std::memory_order_relaxed);
     leaf->last_used_epoch = ++logical_clock_;
     return leaf;
 }

@@ -47,6 +47,13 @@ struct Config {
     std::size_t branches{8};
     std::size_t prefix{2048};
     std::size_t suffix{200};
+    int32_t threads{0};
+    int32_t flash_attn{-1};
+    std::uint32_t n_ctx{0};
+    std::size_t warmup{0};
+    bool verify{false};
+    bool discovery_only{false};
+    bool single{false};
 };
 
 struct MemoryInfo {
@@ -62,6 +69,7 @@ struct RunResult {
     std::vector<std::vector<TokenId>> generated;
     std::vector<std::vector<float>> final_logits;
     MemoryInfo memory;
+    std::vector<std::vector<std::vector<float>>> verification_logits;
 };
 
 [[nodiscard]] std::uint32_t pad256(std::size_t value) {
@@ -117,8 +125,9 @@ struct RunResult {
                                                 std::uint32_t n_ctx) {
     try {
         const bool tree_arm = config.arm == "tree";
-        Context context(model, n_ctx, 128,
-                        static_cast<std::uint32_t>(config.branches), tree_arm);
+        Context context(model, n_ctx, static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
+                        static_cast<std::uint32_t>(config.branches), tree_arm,
+                        config.threads, config.flash_attn);
         const auto prompt = make_tokens(config.prefix, model.info().n_vocab, 0);
         const auto start_prefill = std::chrono::steady_clock::now();
         std::optional<LlamaBackend> llama_backend;
@@ -182,6 +191,8 @@ struct RunResult {
         for (auto& branch_tokens : generated) {
             branch_tokens.reserve(config.suffix);
         }
+        const auto initial_tokens = next_tokens;
+        std::vector<std::vector<std::vector<float>>> verification_logits(config.branches);
         std::vector<double> step_us;
         step_us.reserve(config.suffix);
         std::vector<BackendPos> positions(config.branches);
@@ -208,6 +219,10 @@ struct RunResult {
             next_tokens = result.tokens;
             for (std::size_t branch = 0; branch < config.branches; ++branch) {
                 generated[branch].push_back(next_tokens[branch]);
+                if (config.verify) {
+                    verification_logits[branch].push_back(context.logits_ith(
+                        static_cast<std::int32_t>(branch)));
+                }
             }
         }
 
@@ -222,7 +237,12 @@ struct RunResult {
                 const SeqRange holder{
                     static_cast<BackendSeqId>(branch), 0,
                     static_cast<BackendPos>(config.prefix + config.suffix)};
-                static_cast<void>(tree->commit(prefix_node, generated[branch], holder));
+                // KV holds the initial suffix input followed by all generated
+                // tokens except the final prediction (which has not been fed).
+                auto consumed = generated[branch];
+                consumed.pop_back();
+                consumed.insert(consumed.begin(), initial_tokens[branch]);
+                static_cast<void>(tree->commit(prefix_node, consumed, holder));
             }
             if (!tree->validate()) {
                 std::cerr << "run_once n_ctx=" << n_ctx
@@ -238,7 +258,8 @@ struct RunResult {
 
         return RunResult{context.n_ctx(), prefill_ms, std::move(fork_us),
                          std::move(step_us), std::move(generated),
-                         std::move(final_logits), process_memory()};
+                         std::move(final_logits), process_memory(),
+                         std::move(verification_logits)};
     } catch (const std::exception& error) {
         std::cerr << "run_once n_ctx=" << n_ctx << ": " << error.what()
                   << "\n";
@@ -248,57 +269,74 @@ struct RunResult {
 
 [[nodiscard]] std::optional<RunResult> find_min_context(
     const Model& model, const Config& config, std::uint32_t predicted) {
-    std::vector<std::uint32_t> candidates;
-    if (predicted >= 256) {
-        candidates.push_back(predicted - 256);
-    }
-    candidates.push_back(predicted);
+    // Search on the backend's 256-cell allocation grid. Exploratory timings
+    // are discarded; report the smallest successful aligned capacity.
     std::optional<RunResult> result;
-    for (const std::uint32_t candidate : candidates) {
-        auto attempt = run_once(model, config, candidate);
-        if (attempt.has_value()) {
-            result = std::move(attempt);
+    for (std::uint32_t candidate = predicted;
+         candidate <= predicted + 4096; candidate += 256) {
+        result = run_once(model, config, candidate);
+        if (result.has_value()) {
+            break;
         }
     }
-    if (result.has_value()) {
-        return result;
+    if (!result.has_value()) {
+        return std::nullopt;
     }
-    for (std::uint32_t candidate = predicted + 256;
-         candidate <= predicted + 4096; candidate += 256) {
-        auto attempt = run_once(model, config, candidate);
-        if (attempt.has_value()) {
-            return attempt;
+    for (std::uint32_t candidate = result->n_ctx - 256;
+         candidate >= 256; candidate -= 256) {
+        auto smaller = run_once(model, config, candidate);
+        if (!smaller.has_value()) {
+            break;
+        }
+        // Non-unified contexts can round several requests to the same size.
+        if (smaller->n_ctx < result->n_ctx) {
+            result = std::move(smaller);
         }
     }
     return result;
 }
 
+// Numerical tolerance for correctness verification:
+// - Deterministic greedy sampling: token match rate must be 1.0 (100% equivalent tokens).
+// - Max absolute logit difference tolerance: 1e-3.
+constexpr double kMaxLogitDiffTolerance = 1e-3;
+constexpr double kMinTokenMatchRate = 1.0;
+
 struct CorrectnessResult {
-    double max_abs_logit_diff;
-    double token_match_rate;
+    double max_abs_logit_diff{0.0};
+    double mean_abs_logit_diff{0.0};
+    double token_match_rate{0.0};
+    bool passed{false};
 };
 
 [[nodiscard]] std::optional<CorrectnessResult> check_correctness(
     const Model& model, const Config& config,
-    const RunResult& tree_result) {
-    if (config.arm != "tree" || config.branches != 8 || config.prefix != 2048 ||
-        config.suffix != 64) {
-        return std::nullopt;
-    }
+    const RunResult& test_result) {
     double max_diff = 0.0;
+    double sum_diff = 0.0;
+    std::size_t logit_count = 0;
     std::size_t matches = 0;
     std::size_t total = 0;
     const auto prompt = make_tokens(config.prefix, model.info().n_vocab, 0);
+    const auto initial_tokens =
+        make_tokens(config.branches, model.info().n_vocab, config.prefix);
+
     for (std::size_t branch = 0; branch < config.branches; ++branch) {
-        Context context(model, pad256(config.prefix + config.suffix + 256),
-                        128, 1, false);
+        // A separate context owns each reference branch, with the same context
+        // dimensions and KV layout as the tested arm. No seq_cp is used here.
+        Context context(model, test_result.n_ctx,
+                        static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
+                        static_cast<std::uint32_t>(config.branches),
+                        config.arm == "tree", config.threads, config.flash_attn);
         if (context.prefill(0, prompt, 0) != DecodeStatus::Ok) {
+            std::cerr << "Verification error: independent prefill failed on branch "
+                      << branch << "\n";
             return std::nullopt;
         }
-        TokenId next_token =
-            make_tokens(config.branches, model.info().n_vocab, config.prefix)[branch];
+        TokenId next_token = initial_tokens[branch];
         std::vector<TokenId> independent;
         independent.reserve(config.suffix);
+        bool same_history = true;
         for (std::size_t step = 0; step < config.suffix; ++step) {
             const std::array<BackendSeqId, 1> seqs{0};
             const std::array<TokenId, 1> tokens{next_token};
@@ -306,29 +344,86 @@ struct CorrectnessResult {
                 static_cast<BackendPos>(config.prefix + step)};
             const auto result = context.decode_lockstep(seqs, tokens, positions);
             if (result.status != DecodeStatus::Ok) {
+                std::cerr << "Verification error: independent decode failed on branch "
+                          << branch << ", step " << step << "\n";
                 return std::nullopt;
             }
             next_token = result.tokens.front();
             independent.push_back(next_token);
-        }
-        const auto logits = context.logits_ith(0);
-        const auto& tree_logits = tree_result.final_logits[branch];
-        for (std::size_t index = 0; index < logits.size(); ++index) {
-            max_diff = std::max(max_diff,
-                                std::abs(static_cast<double>(logits[index]) -
-                                         static_cast<double>(tree_logits[index])));
+            // Logits are comparable only while input histories are identical.
+            // Include the first different prediction, then stop logit comparisons
+            // for this branch; still compare the complete free-running token streams.
+            if (same_history) {
+                const auto logits = context.logits_ith(0);
+                const auto& test_logits = test_result.verification_logits[branch][step];
+                double step_max = 0.0;
+                for (std::size_t index = 0; index < logits.size(); ++index) {
+                    const double diff = std::abs(static_cast<double>(logits[index]) -
+                                                 static_cast<double>(test_logits[index]));
+                    if (!std::isfinite(diff)) {
+                        throw std::runtime_error("verification encountered non-finite logits");
+                    }
+                    step_max = std::max(step_max, diff);
+                    max_diff = std::max(max_diff, diff);
+                    sum_diff += diff;
+                    ++logit_count;
+                }
+                if (next_token != test_result.generated[branch][step]) {
+                    std::cerr << "First token divergence: branch=" << branch
+                              << " step=" << step << " independent=" << next_token
+                              << " shared=" << test_result.generated[branch][step]
+                              << " comparable_logit_max_diff=" << step_max << "\n";
+                    same_history = false;
+                }
+            }
         }
         for (std::size_t index = 0; index < independent.size(); ++index) {
             ++total;
-            if (independent[index] == tree_result.generated[branch][index]) {
+            if (independent[index] == test_result.generated[branch][index]) {
                 ++matches;
             }
         }
     }
-    return CorrectnessResult{max_diff,
-                             total == 0 ? 0.0
-                                        : static_cast<double>(matches) /
-                                              static_cast<double>(total)};
+    const double mean_diff =
+        logit_count == 0 ? 0.0 : sum_diff / static_cast<double>(logit_count);
+    const double match_rate =
+        total == 0 ? 0.0 : static_cast<double>(matches) / static_cast<double>(total);
+    const bool passed = (match_rate >= kMinTokenMatchRate) && (max_diff <= kMaxLogitDiffTolerance);
+    return CorrectnessResult{max_diff, mean_diff, match_rate, passed};
+}
+
+[[nodiscard]] CorrectnessResult compare_batched_runs(
+    const RunResult& tested, const RunResult& reference) {
+    std::size_t matches = 0;
+    std::size_t total = 0;
+    std::size_t count = 0;
+    double maximum = 0.0;
+    double sum = 0.0;
+    for (std::size_t branch = 0; branch < tested.generated.size(); ++branch) {
+        bool same_history = true;
+        for (std::size_t step = 0; step < tested.generated[branch].size(); ++step) {
+            if (same_history) {
+                const auto& a = tested.verification_logits[branch][step];
+                const auto& b = reference.verification_logits[branch][step];
+                for (std::size_t i = 0; i < a.size(); ++i) {
+                    const double diff = std::abs(static_cast<double>(a[i]) - b[i]);
+                    if (!std::isfinite(diff)) {
+                        throw std::runtime_error("non-finite batched reference logits");
+                    }
+                    maximum = std::max(maximum, diff);
+                    sum += diff;
+                    ++count;
+                }
+            }
+            const bool equal = tested.generated[branch][step] == reference.generated[branch][step];
+            matches += equal ? 1U : 0U;
+            ++total;
+            same_history = same_history && equal;
+        }
+    }
+    const double rate = static_cast<double>(matches) / static_cast<double>(total);
+    return {maximum, sum / static_cast<double>(count), rate,
+            rate == 1.0 && maximum <= kMaxLogitDiffTolerance};
 }
 
 [[nodiscard]] Config parse_args(int argc, char** argv) {
@@ -351,17 +446,42 @@ struct CorrectnessResult {
             config.prefix = std::stoull(require_value(argument));
         } else if (argument == "--suffix") {
             config.suffix = std::stoull(require_value(argument));
+        } else if (argument == "--threads") {
+            config.threads = std::stoi(require_value(argument));
+        } else if (argument == "--flash-attn") {
+            const std::string val = require_value(argument);
+            if (val == "on" || val == "1" || val == "true") {
+                config.flash_attn = 1;
+            } else if (val == "off" || val == "0" || val == "false") {
+                config.flash_attn = 0;
+            } else if (val == "auto") {
+                config.flash_attn = -1;
+            } else {
+                throw std::invalid_argument("flash-attn must be auto, on, or off");
+            }
+        } else if (argument == "--n-ctx") {
+            config.n_ctx = static_cast<std::uint32_t>(std::stoul(require_value(argument)));
+        } else if (argument == "--warmup") {
+            config.warmup = std::stoull(require_value(argument));
+        } else if (argument == "--verify") {
+            config.verify = true;
+        } else if (argument == "--discovery-only") {
+            config.discovery_only = true;
         } else if (argument == "--single") {
+            config.single = true;
         } else {
             throw std::invalid_argument("unknown argument: " + argument);
         }
     }
     if (config.model_path.empty() ||
         (config.arm != "naive" && config.arm != "tree") ||
-        config.branches == 0 || config.branches > 256 || config.prefix == 0) {
+        config.branches == 0 || config.branches > 256 || config.prefix == 0 ||
+        config.suffix == 0 || config.threads < 0 ||
+        config.prefix > 1000000 || config.suffix > 1000000) {
         throw std::invalid_argument(
             "usage: ie_tree_bench --model <path> --arm <naive|tree> "
-            "--b <branches> --prefix <tokens> --suffix <tokens> [--single]");
+            "--b <branches> --prefix <tokens> --suffix <tokens> [--threads <N>] "
+            "[--flash-attn <auto|on|off>] [--n-ctx <N>] [--warmup <N>] [--verify] [--single]");
     }
     return config;
 }
@@ -387,12 +507,97 @@ int main(int argc, char** argv) {
                                                  pad256(config.prefix + config.suffix)
                                            : pad256(config.prefix +
                                                     config.branches * config.suffix);
-        const auto result = find_min_context(model, config,
-                                             static_cast<std::uint32_t>(n_ctx_pred));
-        if (!result.has_value()) {
-            throw std::runtime_error("no successful n_ctx found");
+
+        std::uint32_t n_ctx_to_use = config.n_ctx;
+        if (n_ctx_to_use == 0) {
+            const auto min_attempt = find_min_context(
+                model, config, static_cast<std::uint32_t>(n_ctx_pred));
+            if (!min_attempt.has_value()) {
+                throw std::runtime_error("no successful n_ctx found during discovery");
+            }
+            n_ctx_to_use = min_attempt->n_ctx;
         }
-        const auto correctness = check_correctness(model, config, result.value());
+
+        if (config.discovery_only) {
+            std::cout << "MIN_N_CTX," << n_ctx_to_use << "\n";
+            return 0;
+        }
+
+        // Warm-up passes (discard timings to avoid contaminating benchmark measurements)
+        for (std::size_t w = 0; w < config.warmup; ++w) {
+            const auto warmup_result = run_once(model, config, n_ctx_to_use);
+            if (!warmup_result.has_value()) {
+                throw std::runtime_error("warmup trial failed");
+            }
+        }
+
+        // Fresh measured trial
+        Config measured_config = config;
+        measured_config.verify = false;
+        const auto result = run_once(model, measured_config, n_ctx_to_use);
+        if (!result.has_value()) {
+            throw std::runtime_error("measured benchmark trial failed");
+        }
+
+        // Correctness verification (only when requested, to avoid contaminating latency measurements)
+        std::optional<CorrectnessResult> correctness;
+        if (config.verify) {
+            const auto verification_run = run_once(model, config, n_ctx_to_use);
+            if (!verification_run.has_value()) {
+                throw std::runtime_error("untimed verification workload failed");
+            }
+            Config paired_config = config;
+            paired_config.arm = config.arm == "tree" ? "naive" : "tree";
+            const auto paired_capacity = paired_config.arm == "naive"
+                ? config.branches * pad256(config.prefix + config.suffix)
+                : static_cast<std::size_t>(pad256(config.prefix + config.branches * config.suffix));
+            const auto paired_run = run_once(model, paired_config,
+                static_cast<std::uint32_t>(paired_capacity));
+            if (!paired_run.has_value()) {
+                throw std::runtime_error("untimed batched reference workload failed");
+            }
+            const auto batched = compare_batched_runs(verification_run.value(), paired_run.value());
+            std::cout << "CSV_BATCH_VERIFY,"
+                      << std::filesystem::path(config.model_path).filename().string()
+                      << "," << config.branches << "," << config.prefix << "," << config.suffix
+                      << "," << config.threads << "," << config.flash_attn
+                      << "," << csv_value(batched.token_match_rate)
+                      << "," << csv_value(batched.max_abs_logit_diff)
+                      << "," << csv_value(batched.mean_abs_logit_diff)
+                      << "," << (batched.passed ? "PASSED" : "FAILED") << "\n";
+            correctness = check_correctness(model, config, verification_run.value());
+            if (!batched.passed) {
+                correctness->passed = false;
+            }
+            if (!correctness.has_value()) {
+                std::cerr << "Verification failed to complete\n";
+                return 2;
+            }
+            std::cout << "\n=== Correctness Verification ===\n"
+                      << "Token match rate: " << std::fixed << std::setprecision(4)
+                      << (correctness->token_match_rate * 100.0) << "%\n"
+                      << "Max absolute logit diff: " << std::setprecision(6)
+                      << correctness->max_abs_logit_diff << "\n"
+                      << "Mean absolute logit diff: "
+                      << correctness->mean_abs_logit_diff << "\n"
+                      << "Status: " << (correctness->passed ? "PASSED" : "FAILED") << "\n\n";
+
+            std::cout << "CSV_VERIFY,"
+                      << std::filesystem::path(config.model_path).filename().string()
+                      << "," << config.arm << "," << config.branches << ","
+                      << config.prefix << "," << config.suffix << ","
+                      << config.threads << "," << config.flash_attn << ","
+                      << csv_value(correctness->token_match_rate) << ","
+                      << csv_value(correctness->max_abs_logit_diff) << ","
+                      << csv_value(correctness->mean_abs_logit_diff) << ","
+                      << (correctness->passed ? "PASSED" : "FAILED") << "\n";
+
+            if (!correctness->passed) {
+                std::cerr << "Verification failure: outputs do not match within tolerance (match_rate >= 1.0, max_diff <= 1e-3)\n";
+                return 2;
+            }
+        }
+
         const double kv_bytes = static_cast<double>(result->n_ctx) *
                                 static_cast<double>(model.info().kappa_bytes);
         const double rho_pred = static_cast<double>(config.branches) *
@@ -412,6 +617,8 @@ int main(int argc, char** argv) {
                   << "\narm: " << config.arm << "\n"
                   << "b/P/S: " << config.branches << "/" << config.prefix << "/"
                   << config.suffix << "\n"
+                  << "threads: " << config.threads << "\n"
+                  << "flash_attn: " << config.flash_attn << "\n"
                   << "n_ctx predicted/measured: " << n_ctx_pred << "/"
                   << result->n_ctx << "\n"
                   << "kappa bytes: " << model.info().kappa_bytes << "\n"
@@ -420,6 +627,7 @@ int main(int argc, char** argv) {
                   << "/" << steps_p99 << "\n"
                   << "tokens/s: " << tok_per_s << "\n";
 
+        // Standard CSV output (compatible with existing 23-column format)
         std::cout << "CSV," << std::filesystem::path(config.model_path).filename().string()
                   << "," << config.arm << "," << config.branches << ","
                   << config.prefix << "," << config.suffix << "," << result->n_ctx
@@ -438,6 +646,35 @@ int main(int argc, char** argv) {
                       << csv_value(correctness->token_match_rate);
         } else {
             std::cout << "NA,NA";
+        }
+        std::cout << "\n";
+
+        // Extended CSV line for Milestone B & C rich trial logging
+        std::cout << "CSV_EXTENDED,"
+                  << std::filesystem::path(config.model_path).filename().string()
+                  << "," << config.arm << "," << config.branches << ","
+                  << config.prefix << "," << config.suffix << ","
+                  << config.threads << "," << config.flash_attn << ","
+                  << result->n_ctx << "," << n_ctx_pred << ","
+                  << model.info().kappa_bytes << ","
+                  << static_cast<std::uint64_t>(kv_bytes) << ","
+                  << csv_value(rho_pred) << ","
+                  << csv_value(result->prefill_ms) << ","
+                  << csv_value(percentile(result->fork_us, 0.50)) << ","
+                  << csv_value(percentile(result->fork_us, 0.99)) << ","
+                  << csv_value(steps_p50) << "," << csv_value(steps_p90) << ","
+                  << csv_value(steps_p99) << ","
+                  << csv_value(steps_p99 - steps_p50) << ","
+                  << csv_value(tok_per_s) << ","
+                  << csv_value(result->memory.private_bytes) << ","
+                  << csv_value(result->memory.peak_working_set_bytes) << ",";
+        if (correctness.has_value()) {
+            std::cout << csv_value(correctness->max_abs_logit_diff) << ","
+                      << csv_value(correctness->mean_abs_logit_diff) << ","
+                      << csv_value(correctness->token_match_rate) << ","
+                      << (correctness->passed ? "PASSED" : "FAILED");
+        } else {
+            std::cout << "NA,NA,NA,NA";
         }
         std::cout << "\n";
     } catch (const std::exception& error) {

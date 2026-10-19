@@ -51,7 +51,8 @@ struct DecodeResult {
 class Context {
 public:
     Context(const Model& model, std::uint32_t n_ctx, std::uint32_t n_batch,
-            std::uint32_t n_seq_max, bool kv_unified);
+            std::uint32_t n_seq_max, bool kv_unified, int32_t n_threads = 0,
+            int32_t flash_attn = -1);
     ~Context();
 
     Context(const Context&) = delete;

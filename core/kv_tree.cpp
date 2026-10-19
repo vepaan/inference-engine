@@ -243,6 +243,7 @@ Node* KvRadixTree::split(Node* node, std::uint32_t edge_offset) {
         child = child->next_sibling;
     }
     middle->first_child.store(node, std::memory_order_relaxed);
+    middle->next_sibling = node->next_sibling;
     node->next_sibling = nullptr;
     node->parent = middle.get();
     Node* middle_ptr = middle.release();

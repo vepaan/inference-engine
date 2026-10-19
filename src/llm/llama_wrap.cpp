@@ -93,7 +93,7 @@ llama_model* Model::handle() const noexcept { return model_; }
 
 Context::Context(const Model& model, std::uint32_t n_ctx,
                  std::uint32_t n_batch, std::uint32_t n_seq_max,
-                 bool kv_unified)
+                 bool kv_unified, int32_t n_threads, int32_t flash_attn)
     : context_(nullptr), n_batch_(n_batch), n_seq_max_(n_seq_max),
       n_vocab_(model.info().n_vocab) {
     if (n_ctx == 0 || n_batch == 0 || n_seq_max == 0 ||
@@ -108,6 +108,17 @@ Context::Context(const Model& model, std::uint32_t n_ctx,
     params.n_outputs_max = n_batch;
     params.kv_unified = kv_unified;
     params.no_perf = false;
+    if (n_threads > 0) {
+        params.n_threads = n_threads;
+        params.n_threads_batch = n_threads;
+    }
+    if (flash_attn == 0) {
+        params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_DISABLED;
+    } else if (flash_attn == 1) {
+        params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
+    } else {
+        params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_AUTO;
+    }
     context_ = llama_init_from_model(model.handle(), params);
     if (context_ == nullptr) {
         throw std::runtime_error("failed to create llama context");

@@ -1,0 +1,33 @@
+{
+  "command": [
+    "build/Release/ie_tree_bench.exe",
+    "--model",
+    "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+    "--arm",
+    "tree",
+    "--b",
+    "2",
+    "--prefix",
+    "1024",
+    "--suffix",
+    "16",
+    "--threads",
+    "8",
+    "--flash-attn",
+    "off",
+    "--kv-type",
+    "f32",
+    "--n-ctx",
+    "1536",
+    "--phase-markers"
+  ],
+  "exit_code": 0,
+  "interval_ms": 20.0,
+  "symbol_handler_initialized": true,
+  "samples": 412,
+  "failures": {},
+  "method": "Flat instruction pointers of this launched child's threads; CPU-time deltas weight approximate attribution; instrumentation perturbs execution; no stacks or hardware counters",
+  "executable_sha256": "1301b37026bc609dde21cb25f3f6fb29503639acf3059c3efdd2eef38c4b15ad",
+  "profiler_sha256": "c16208a619070ccf8465d17f904b10ccce078f5c3ca937f640b0e55002cf5be2",
+  "git_commit": "6356289c19bb920f66b28660995bf68e6ad9133d"
+}

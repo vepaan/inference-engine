@@ -52,6 +52,10 @@ struct Config {
     std::uint32_t n_ctx{0};
     std::size_t warmup{0};
     bool verify{false};
+    bool verify_batched{false};
+    bool kv_f32{false};
+    bool phase_markers{false};
+    bool trace_attention{false};
     bool discovery_only{false};
     bool single{false};
 };
@@ -101,9 +105,11 @@ struct RunResult {
         return 0.0;
     }
     std::sort(values.begin(), values.end());
-    const auto index = static_cast<std::size_t>(
-        std::floor(fraction * static_cast<double>(values.size() - 1)));
-    return values[index];
+    const double position = fraction * static_cast<double>(values.size() - 1);
+    const auto lower = static_cast<std::size_t>(std::floor(position));
+    const auto upper = static_cast<std::size_t>(std::ceil(position));
+    return values[lower] + (position - static_cast<double>(lower)) *
+                               (values[upper] - values[lower]);
 }
 
 [[nodiscard]] MemoryInfo process_memory() {
@@ -127,8 +133,9 @@ struct RunResult {
         const bool tree_arm = config.arm == "tree";
         Context context(model, n_ctx, static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
                         static_cast<std::uint32_t>(config.branches), tree_arm,
-                        config.threads, config.flash_attn);
+                        config.threads, config.flash_attn, config.kv_f32, config.trace_attention);
         const auto prompt = make_tokens(config.prefix, model.info().n_vocab, 0);
+        if (config.phase_markers) { std::cout << "PROFILE_PHASE,prefill" << std::endl; }
         const auto start_prefill = std::chrono::steady_clock::now();
         std::optional<LlamaBackend> llama_backend;
         std::optional<KvRadixTree> tree;
@@ -160,6 +167,7 @@ struct RunResult {
                 std::chrono::steady_clock::now() - start_prefill)
                 .count();
 
+        if (config.phase_markers) { std::cout << "PROFILE_PHASE,fork" << std::endl; }
         std::vector<double> fork_us;
         if (tree_arm) {
             const auto fork_start = std::chrono::steady_clock::now();
@@ -193,6 +201,7 @@ struct RunResult {
         }
         const auto initial_tokens = next_tokens;
         std::vector<std::vector<std::vector<float>>> verification_logits(config.branches);
+        if (config.phase_markers) { std::cout << "PROFILE_PHASE,decode" << std::endl; }
         std::vector<double> step_us;
         step_us.reserve(config.suffix);
         std::vector<BackendPos> positions(config.branches);
@@ -226,6 +235,7 @@ struct RunResult {
             }
         }
 
+        if (config.phase_markers) { std::cout << "PROFILE_PHASE,complete" << std::endl; }
         std::vector<std::vector<float>> final_logits(config.branches);
         for (std::size_t branch = 0; branch < config.branches; ++branch) {
             final_logits[branch] = context.logits_ith(
@@ -327,7 +337,7 @@ struct CorrectnessResult {
         Context context(model, test_result.n_ctx,
                         static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
                         static_cast<std::uint32_t>(config.branches),
-                        config.arm == "tree", config.threads, config.flash_attn);
+                        config.arm == "tree", config.threads, config.flash_attn, config.kv_f32, config.trace_attention);
         if (context.prefill(0, prompt, 0) != DecodeStatus::Ok) {
             std::cerr << "Verification error: independent prefill failed on branch "
                       << branch << "\n";
@@ -446,6 +456,16 @@ struct CorrectnessResult {
             config.prefix = std::stoull(require_value(argument));
         } else if (argument == "--suffix") {
             config.suffix = std::stoull(require_value(argument));
+        } else if (argument == "--kv-type") {
+            const std::string value = require_value(argument);
+            if (value != "f16" && value != "f32") {
+                throw std::invalid_argument("kv-type must be f16 or f32");
+            }
+            config.kv_f32 = value == "f32";
+        } else if (argument == "--attention-shapes") {
+            config.trace_attention = true;
+        } else if (argument == "--phase-markers") {
+            config.phase_markers = true;
         } else if (argument == "--threads") {
             config.threads = std::stoi(require_value(argument));
         } else if (argument == "--flash-attn") {
@@ -463,6 +483,8 @@ struct CorrectnessResult {
             config.n_ctx = static_cast<std::uint32_t>(std::stoul(require_value(argument)));
         } else if (argument == "--warmup") {
             config.warmup = std::stoull(require_value(argument));
+        } else if (argument == "--verify-batched") {
+            config.verify_batched = true;
         } else if (argument == "--verify") {
             config.verify = true;
         } else if (argument == "--discovery-only") {
@@ -481,7 +503,7 @@ struct CorrectnessResult {
         throw std::invalid_argument(
             "usage: ie_tree_bench --model <path> --arm <naive|tree> "
             "--b <branches> --prefix <tokens> --suffix <tokens> [--threads <N>] "
-            "[--flash-attn <auto|on|off>] [--n-ctx <N>] [--warmup <N>] [--verify] [--single]");
+            "[--kv-type <f16|f32>] [--flash-attn <auto|on|off>] [--n-ctx <N>] [--warmup <N>] [--verify] [--single]");
     }
     return config;
 }
@@ -502,6 +524,7 @@ int main(int argc, char** argv) {
     try {
         const Config config = parse_args(argc, argv);
         const Model model(config.model_path);
+        const std::size_t kappa_bytes = model.info().kappa_bytes * (config.kv_f32 ? 2U : 1U);
         const std::size_t n_ctx_pred = config.arm == "naive"
                                            ? config.branches *
                                                  pad256(config.prefix + config.suffix)
@@ -541,12 +564,14 @@ int main(int argc, char** argv) {
 
         // Correctness verification (only when requested, to avoid contaminating latency measurements)
         std::optional<CorrectnessResult> correctness;
-        if (config.verify) {
-            const auto verification_run = run_once(model, config, n_ctx_to_use);
+        if (config.verify || config.verify_batched) {
+            Config verification_config = config;
+            verification_config.verify = true;
+            const auto verification_run = run_once(model, verification_config, n_ctx_to_use);
             if (!verification_run.has_value()) {
                 throw std::runtime_error("untimed verification workload failed");
             }
-            Config paired_config = config;
+            Config paired_config = verification_config;
             paired_config.arm = config.arm == "tree" ? "naive" : "tree";
             const auto paired_capacity = paired_config.arm == "naive"
                 ? config.branches * pad256(config.prefix + config.suffix)
@@ -564,15 +589,15 @@ int main(int argc, char** argv) {
                       << "," << csv_value(batched.token_match_rate)
                       << "," << csv_value(batched.max_abs_logit_diff)
                       << "," << csv_value(batched.mean_abs_logit_diff)
-                      << "," << (batched.passed ? "PASSED" : "FAILED") << "\n";
+                      << "," << (batched.passed ? "PASSED" : "FAILED")
+                      << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
+            if (config.verify) {
             correctness = check_correctness(model, config, verification_run.value());
-            if (!batched.passed) {
-                correctness->passed = false;
-            }
             if (!correctness.has_value()) {
                 std::cerr << "Verification failed to complete\n";
                 return 2;
             }
+            correctness->passed = correctness->passed && batched.passed;
             std::cout << "\n=== Correctness Verification ===\n"
                       << "Token match rate: " << std::fixed << std::setprecision(4)
                       << (correctness->token_match_rate * 100.0) << "%\n"
@@ -590,16 +615,21 @@ int main(int argc, char** argv) {
                       << csv_value(correctness->token_match_rate) << ","
                       << csv_value(correctness->max_abs_logit_diff) << ","
                       << csv_value(correctness->mean_abs_logit_diff) << ","
-                      << (correctness->passed ? "PASSED" : "FAILED") << "\n";
+                      << (correctness->passed ? "PASSED" : "FAILED")
+                      << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
 
             if (!correctness->passed) {
                 std::cerr << "Verification failure: outputs do not match within tolerance (match_rate >= 1.0, max_diff <= 1e-3)\n";
                 return 2;
             }
+            } else if (!batched.passed) {
+                std::cerr << "Batched naive/tree parity failed\n";
+                return 2;
+            }
         }
 
         const double kv_bytes = static_cast<double>(result->n_ctx) *
-                                static_cast<double>(model.info().kappa_bytes);
+                                static_cast<double>(kappa_bytes);
         const double rho_pred = static_cast<double>(config.branches) *
                                 static_cast<double>(config.prefix + config.suffix) /
                                 static_cast<double>(config.prefix +
@@ -618,10 +648,11 @@ int main(int argc, char** argv) {
                   << "b/P/S: " << config.branches << "/" << config.prefix << "/"
                   << config.suffix << "\n"
                   << "threads: " << config.threads << "\n"
+                  << "kv_type: " << (config.kv_f32 ? "f32" : "f16") << "\n"
                   << "flash_attn: " << config.flash_attn << "\n"
                   << "n_ctx predicted/measured: " << n_ctx_pred << "/"
                   << result->n_ctx << "\n"
-                  << "kappa bytes: " << model.info().kappa_bytes << "\n"
+                  << "kappa bytes: " << kappa_bytes << "\n"
                   << "KV bytes: " << static_cast<std::uint64_t>(kv_bytes) << "\n"
                   << "step us p50/p90/p99: " << steps_p50 << "/" << steps_p90
                   << "/" << steps_p99 << "\n"
@@ -631,7 +662,7 @@ int main(int argc, char** argv) {
         std::cout << "CSV," << std::filesystem::path(config.model_path).filename().string()
                   << "," << config.arm << "," << config.branches << ","
                   << config.prefix << "," << config.suffix << "," << result->n_ctx
-                  << "," << n_ctx_pred << "," << model.info().kappa_bytes << ","
+                  << "," << n_ctx_pred << "," << kappa_bytes << ","
                   << static_cast<std::uint64_t>(kv_bytes) << ",NA," << csv_value(rho_pred)
                   << "," << csv_value(result->prefill_ms) << ","
                   << csv_value(percentile(result->fork_us, 0.50)) << ","
@@ -656,7 +687,7 @@ int main(int argc, char** argv) {
                   << config.prefix << "," << config.suffix << ","
                   << config.threads << "," << config.flash_attn << ","
                   << result->n_ctx << "," << n_ctx_pred << ","
-                  << model.info().kappa_bytes << ","
+                  << kappa_bytes << ","
                   << static_cast<std::uint64_t>(kv_bytes) << ","
                   << csv_value(rho_pred) << ","
                   << csv_value(result->prefill_ms) << ","
@@ -676,7 +707,7 @@ int main(int argc, char** argv) {
         } else {
             std::cout << "NA,NA,NA,NA";
         }
-        std::cout << "\n";
+        std::cout << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
     } catch (const std::exception& error) {
         std::cerr << "ie_tree_bench: " << error.what() << "\n";
         return 1;

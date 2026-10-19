@@ -1,0 +1,8 @@
+arm,symbol,cpu_delta_s,estimated_share
+tree,unresolved,0.859375,0.5288461538461539
+tree,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>",0.28125,0.17307692307692307
+tree,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",0.15625,0.09615384615384616
+tree,ggml_vec_dot_f32,0.125,0.07692307692307693
+tree,inference_engine::llm::Context::decode_lockstep,0.078125,0.04807692307692308
+tree,ggml_graph_compute_thread,0.0625,0.038461538461538464
+tree,ggml_vec_dot_q6_K_q8_K,0.0625,0.038461538461538464

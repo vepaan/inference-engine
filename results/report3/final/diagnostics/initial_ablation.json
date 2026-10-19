@@ -1,0 +1,106 @@
+{
+  "git_commit": "6356289c19bb920f66b28660995bf68e6ad9133d",
+  "executable_sha256": "2ce4a6538ae1251182c45ba296be243a2bc4b4c1c3c33c793561a9085ae757c2",
+  "experiments": [
+    {
+      "name": "control",
+      "environment": {},
+      "command": [
+        "build/Release/ie_tree_bench.exe",
+        "--model",
+        "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+        "--arm",
+        "tree",
+        "--b",
+        "2",
+        "--prefix",
+        "1024",
+        "--suffix",
+        "8",
+        "--threads",
+        "8",
+        "--flash-attn",
+        "on",
+        "--n-ctx",
+        "1536",
+        "--verify"
+      ],
+      "exit_code": 2,
+      "metrics": [
+        "CSV_BATCH_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,8,8,1,1.000000,0.000000,0.000000,PASSED",
+        "CSV_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,8,8,1,0.562500,0.859098,0.114336,FAILED"
+      ],
+      "divergence": [
+        "First token divergence: branch=0 step=1 independent=99 shared=98 comparable_logit_max_diff=0.43811"
+      ]
+    },
+    {
+      "name": "no-fusion",
+      "environment": {
+        "GGML_CPU_DISABLE_FUSION": "1"
+      },
+      "command": [
+        "build/Release/ie_tree_bench.exe",
+        "--model",
+        "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+        "--arm",
+        "tree",
+        "--b",
+        "2",
+        "--prefix",
+        "1024",
+        "--suffix",
+        "8",
+        "--threads",
+        "8",
+        "--flash-attn",
+        "on",
+        "--n-ctx",
+        "1536",
+        "--verify"
+      ],
+      "exit_code": 2,
+      "metrics": [
+        "CSV_BATCH_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,8,8,1,1.000000,0.000000,0.000000,PASSED",
+        "CSV_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,8,8,1,0.562500,0.859098,0.114336,FAILED"
+      ],
+      "divergence": [
+        "First token divergence: branch=0 step=1 independent=99 shared=98 comparable_logit_max_diff=0.43811"
+      ]
+    },
+    {
+      "name": "no-iq-panel",
+      "environment": {
+        "GGML_NO_IQ_PANEL": "1"
+      },
+      "command": [
+        "build/Release/ie_tree_bench.exe",
+        "--model",
+        "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+        "--arm",
+        "tree",
+        "--b",
+        "2",
+        "--prefix",
+        "1024",
+        "--suffix",
+        "8",
+        "--threads",
+        "8",
+        "--flash-attn",
+        "on",
+        "--n-ctx",
+        "1536",
+        "--verify"
+      ],
+      "exit_code": 2,
+      "metrics": [
+        "CSV_BATCH_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,8,8,1,1.000000,0.000000,0.000000,PASSED",
+        "CSV_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,8,8,1,0.562500,0.859098,0.114336,FAILED"
+      ],
+      "divergence": [
+        "First token divergence: branch=0 step=1 independent=99 shared=98 comparable_logit_max_diff=0.43811"
+      ]
+    }
+  ]
+}

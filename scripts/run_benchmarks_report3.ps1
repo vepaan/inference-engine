@@ -1,14 +1,17 @@
 param(
     [string] $BuildDir = "build/Release",
     [Alias("ModelPath")][string] $Model135 = "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
-    [string] $OutputDir = "results/report3/continuation",
+    [string] $OutputDir = "results/report3/final/campaign",
+    [ValidateSet("f16","f32")][string] $KVType = "f16",
+    [ValidateSet(0,1)][int] $FlashAttention = 1,
     [Alias("Repetitions")][ValidateRange(1,100)][int] $Trials = 5,
     [ValidateRange(1,100)][int] $Warmup = 1,
-    [ValidateSet("All","Matrix","Threads","Attention","Correctness","Bandwidth")][string] $Experiment = "All",
+    [ValidateSet("All","Matrix","Threads","Attention","Correctness","Parity","Bandwidth")][string] $Experiment = "All",
     [int[]] $Branches = @(2,4,8,16),
     [int[]] $Prefixes = @(1024,2048),
     [ValidateSet("tree","naive")][string] $VerificationArm = "tree",
     [ValidateSet(0,1)][int[]] $AttentionModes = @(1,0),
+    [ValidateRange(1,1000000)][int] $VerificationSuffix = 64,
     [int] $ProfileBranches = 8,
     [int] $ProfilePrefix = 1024,
     [ValidateRange(1,256)][int] $Threads = 2,
@@ -33,7 +36,7 @@ $logicalCores = [Environment]::ProcessorCount
 $hardwareJson = python -c "import ctypes,json; from ctypes import wintypes; x=(ctypes.c_ulonglong*8)(); x[0]=64; ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(x)); print(json.dumps({'memory_bytes':x[1]}))"
 if ($LASTEXITCODE -ne 0) { throw "Could not collect memory metadata using Python" }
 $hardware = $hardwareJson | ConvertFrom-Json
-$sourceFiles = @(git ls-files --cached --others --exclude-standard core src apps tests scripts CMakeLists.txt)
+$sourceFiles = @(git ls-files --cached --others --exclude-standard core src apps bench tests scripts CMakeLists.txt)
 $sourceHashes = [ordered]@{}
 foreach ($file in ($sourceFiles | Sort-Object -Unique)) {
     if (Test-Path -LiteralPath $file -PathType Leaf) {
@@ -50,14 +53,16 @@ $identity = [ordered]@{
     model_path = $Model135
     threads = $Threads
     warmup_processes_per_trial = $Warmup
-    flash_attn = 1
+    default_flash_attn = $FlashAttention
     n_batch = 128
     sampling = "greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping"
-    kv_type = "f16 K and V; CPU only"
+    kv_type = "$KVType K and V; CPU only"
+    latency_quantile = "linear interpolation (type 7)"
+    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
 }
 $identityJson = $identity | ConvertTo-Json -Depth 8 -Compress
 $cacheFile = (Resolve-Path (Join-Path (Split-Path $BuildDir) "CMakeCache.txt")).Path
-$cacheMetadata = @([IO.File]::ReadAllLines($cacheFile) -match "^(CMAKE_CXX_COMPILER|CMAKE_GENERATOR|CMAKE_BUILD_TYPE|IE_WITH_LLAMA)")
+$cacheMetadata = @([IO.File]::ReadAllLines($cacheFile) -match "^(CMAKE_CXX_COMPILER|CMAKE_GENERATOR|CMAKE_BUILD_TYPE|CMAKE_CXX_FLAGS|IE_WITH_LLAMA|IE_PROFILE_SYMBOLS|IE_TEST_GGUF|GGML_)")
 if (Test-Path $envPath) {
     $old = Get-Content $envPath -Raw | ConvertFrom-Json
     if ($old.identity_json -cne $identityJson) {
@@ -87,7 +92,7 @@ if (Test-Path $envPath) {
 function Initialize-Csv($Path, $Header) {
     if (-not (Test-Path $Path)) { Set-Content $Path $Header }
 }
-Initialize-Csv $rawPath "trial,model,arm,b,P,S,threads,flash_attn,n_ctx,n_ctx_pred,kappa_bytes,kv_bytes,rho_pred,prefill_ms,fork_us_p50,fork_us_p99,step_us_p50,step_us_p90,step_us_p99,jitter_us,tok_per_s,private_bytes,peak_ws_bytes"
+Initialize-Csv $rawPath "trial,model,arm,b,P,S,threads,flash_attn,n_ctx,n_ctx_pred,kappa_bytes,kv_bytes,rho_pred,prefill_ms,fork_us_p50,fork_us_p99,step_us_p50,step_us_p90,step_us_p99,jitter_us,tok_per_s,private_bytes,peak_ws_bytes,kv_type"
 Initialize-Csv $ctxPath "model,arm,b,P,S,threads,flash_attn,n_ctx"
 $existing = @{}
 foreach ($r in @(Import-Csv $rawPath)) {
@@ -98,12 +103,20 @@ foreach ($r in @(Import-Csv $ctxPath)) {
     $contexts["$($r.arm)|$($r.b)|$($r.P)|$($r.S)|$($r.threads)|$($r.flash_attn)"] = [int]$r.n_ctx
 }
 function Invoke-Native($Arguments, $LogName) {
+    $LogName = "$LogName-$(Get-Date -Format yyyyMMddHHmmssfff)"
     $stdout = Join-Path $logDir "$LogName.stdout.log"
     $stderr = Join-Path $logDir "$LogName.stderr.log"
     # Start-Process separates stderr reliably under Windows PowerShell 5.1.
     $quoted = @($Arguments | ForEach-Object { '"' + ([string]$_).Replace('"','\"') + '"' })
     $p = Start-Process -FilePath $treeBenchExe -ArgumentList $quoted -NoNewWindow -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     $lines = @(Get-Content $stdout)
+    foreach ($line in $lines) {
+        if ($line -like "CSV_BATCH_VERIFY,*") {
+            $batchPath = Join-Path $OutputDir "batched_correctness.csv"
+            Initialize-Csv $batchPath "model,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status,kv_type"
+            Add-Content $batchPath $line.Substring(17)
+        }
+    }
     if ($p.ExitCode -ne 0) {
         $v = $lines | Where-Object { $_ -like "CSV_VERIFY,*" } | Select-Object -Last 1
         if ($v -and (Test-Path $corrPath)) { Add-Content $corrPath $v.Substring(11) }
@@ -119,7 +132,7 @@ function Invoke-Trial($Arm, $B, $P, $S, $T, $FA, $Trial) {
     $ctxKey = "$Arm|$B|$P|$S|$T|$FA"
     $label = "$Arm-b$B-p$P-s$S-t$T-fa$FA"
     $faText = if ($FA -eq 1) { "on" } else { "off" }
-    $base = @("--model",$Model135,"--arm",$Arm,"--b",$B,"--prefix",$P,"--suffix",$S,"--threads",$T,"--flash-attn",$faText)
+    $base = @("--model",$Model135,"--arm",$Arm,"--b",$B,"--prefix",$P,"--suffix",$S,"--threads",$T,"--flash-attn",$faText,"--kv-type",$KVType)
     if (-not $contexts.ContainsKey($ctxKey)) {
         Write-Host "Discovering capacity: $label"
         $out = Invoke-Native ($base + @("--discovery-only")) "$label-discovery"
@@ -136,19 +149,24 @@ function Invoke-Trial($Arm, $B, $P, $S, $T, $FA, $Trial) {
     $line = $out | Where-Object { $_ -like "CSV_EXTENDED,*" } | Select-Object -Last 1
     if (-not $line) { throw "Missing CSV_EXTENDED for $label" }
     $parts = $line.Substring(13).Split(',')
-    if ($parts.Count -ne 26) { throw "Unexpected CSV field count: $($parts.Count)" }
-    Add-Content $rawPath ("$Trial," + ($parts[0..21] -join ','))
+    if ($parts.Count -ne 27) { throw "Unexpected CSV field count: $($parts.Count)" }
+    Add-Content $rawPath ("$Trial," + ($parts[0..21] -join ',') + ",$($parts[26])")
     $existing[$key] = $true
     $script:completed++
     Write-Host "Recorded $label trial $Trial; tokens/s=$($parts[19])"
 }
-if ($Experiment -in @("All","Correctness")) {
-    Initialize-Csv $corrPath "model,arm,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status"
+if ($Experiment -in @("All","Correctness","Parity")) {
+    Initialize-Csv $corrPath "model,arm,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status,kv_type"
+    $verifyFlag = if ($Experiment -eq "Parity") { "--verify-batched" } else { "--verify" }
     foreach ($fa in $AttentionModes) {
         foreach ($b in $Branches) {
             foreach ($p in $Prefixes) {
                 $mode = if ($fa -eq 1) { "on" } else { "off" }
-                $out = Invoke-Native @("--model",$Model135,"--arm",$VerificationArm,"--b",$b,"--prefix",$p,"--suffix",64,"--threads",$Threads,"--flash-attn",$mode,"--verify") "verify-$VerificationArm-b$b-p$p-fa$fa"
+                $out = Invoke-Native @("--model",$Model135,"--arm",$VerificationArm,"--b",$b,"--prefix",$p,"--suffix",$VerificationSuffix,"--threads",$Threads,"--flash-attn",$mode,"--kv-type",$KVType,$verifyFlag) "verify-$VerificationArm-b$b-p$p-fa$fa"
+                if ($Experiment -eq "Parity") {
+                    Write-Host ($out | Where-Object { $_ -like "CSV_BATCH_VERIFY,*" })
+                    continue
+                }
                 $line = $out | Where-Object { $_ -like "CSV_VERIFY,*" } | Select-Object -Last 1
                 if (-not $line) { throw "Missing verification result" }
                 Add-Content $corrPath $line.Substring(11)
@@ -159,14 +177,14 @@ if ($Experiment -in @("All","Correctness")) {
 }
 if ($Experiment -in @("All","Matrix")) {
     foreach ($b in $Branches) { foreach ($p in $Prefixes) { for ($r=1; $r -le $Trials; $r++) {
-        foreach ($arm in @("naive","tree")) { Invoke-Trial $arm $b $p 200 $Threads 1 $r }
+        foreach ($arm in @("naive","tree")) { Invoke-Trial $arm $b $p 200 $Threads $FlashAttention $r }
     } } }
 }
 if ($Experiment -in @("All","Threads")) {
     foreach ($t in @(1,2,4,8)) {
         if ($t -gt $logicalCores) { continue }
         for ($r=1; $r -le $Trials; $r++) { foreach ($arm in @("naive","tree")) {
-            Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $t 1 $r
+            Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $t $FlashAttention $r
         } }
     }
 }

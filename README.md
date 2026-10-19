@@ -10,7 +10,7 @@ A C++20 prototype for measuring shared-prefix KV-cache behavior in agentic tree 
 - The optional llama.cpp wrapper supports CPU prefill, greedy lockstep decode, sequence copy/remove, and model KV metadata.
 - `ie_tree_bench` runs one fresh-process real-model arm; `scripts/run_tree_bench.ps1` aggregates the sweep.
 
-The current tree uses a mutex for structural operations. Progress Report 3 adds correctness diagnostics, resumable real-model trials, thread/attention controls, and a CPU read-bandwidth calibration. See [the technical handoff](results/report3/BENCHMARK_NOTES.md) for measured results and the unresolved independent-context verification failure. Epoch reclamation remains outside this work.
+The current tree uses a mutex for structural operations. Progress Report 3 adds correctness diagnostics, resumable real-model trials, thread/attention controls, and a CPU read-bandwidth calibration. See [the current report checkpoint](results/report3/final/REPORT_READY.md) for completed validation, measured results, and remaining numerical limitations. Epoch reclamation remains outside this work.
 
 ## Requirements
 

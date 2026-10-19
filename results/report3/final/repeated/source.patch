@@ -1,0 +1,578 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f27cf2d..b3a8aa9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -191,3 +191,25 @@ if(IE_WITH_LLAMA)
+ 		)
+ 	endif()
+ endif()
++
++# Keep profiling symbols separate from ordinary Release measurement builds.
++option(IE_PROFILE_SYMBOLS "Emit PDBs for optimized CPU instruction-pointer profiling" OFF)
++if(MSVC AND IE_PROFILE_SYMBOLS)
++    foreach(ie_symbol_target kv_tree ie_llm llama ggml ggml-base ggml-cpu ie_tree_bench)
++        if(TARGET ${ie_symbol_target})
++            target_compile_options(${ie_symbol_target} PRIVATE /Zi)
++        endif()
++    endforeach()
++    if(TARGET ie_tree_bench)
++        target_link_options(ie_tree_bench PRIVATE /DEBUG:FULL /OPT:REF /OPT:ICF)
++    endif()
++endif()
++set(IE_TEST_GGUF "" CACHE FILEPATH "Optional GGUF for real-model correctness regression")
++if(BUILD_TESTING AND IE_WITH_LLAMA AND IE_TEST_GGUF)
++    add_test(NAME ie_real_correctness_f32 COMMAND ie_tree_bench
++        --model ${IE_TEST_GGUF} --arm tree --b 2 --prefix 1024 --suffix 8
++        --threads 2 --flash-attn off --kv-type f32 --n-ctx 1536 --verify)
++    add_test(NAME ie_real_correctness_f16_serial COMMAND ie_tree_bench
++        --model ${IE_TEST_GGUF} --arm tree --b 2 --prefix 1024 --suffix 64
++        --threads 1 --flash-attn on --kv-type f16 --n-ctx 1536 --verify)
++endif()
+diff --git a/apps/ie_tree_bench.cpp b/apps/ie_tree_bench.cpp
+index 1eec5bc..dfb971e 100644
+--- a/apps/ie_tree_bench.cpp
++++ b/apps/ie_tree_bench.cpp
+@@ -52,6 +52,10 @@ struct Config {
+     std::uint32_t n_ctx{0};
+     std::size_t warmup{0};
+     bool verify{false};
++    bool verify_batched{false};
++    bool kv_f32{false};
++    bool phase_markers{false};
++    bool trace_attention{false};
+     bool discovery_only{false};
+     bool single{false};
+ };
+@@ -101,9 +105,11 @@ struct RunResult {
+         return 0.0;
+     }
+     std::sort(values.begin(), values.end());
+-    const auto index = static_cast<std::size_t>(
+-        std::floor(fraction * static_cast<double>(values.size() - 1)));
+-    return values[index];
++    const double position = fraction * static_cast<double>(values.size() - 1);
++    const auto lower = static_cast<std::size_t>(std::floor(position));
++    const auto upper = static_cast<std::size_t>(std::ceil(position));
++    return values[lower] + (position - static_cast<double>(lower)) *
++                               (values[upper] - values[lower]);
+ }
+ 
+ [[nodiscard]] MemoryInfo process_memory() {
+@@ -127,8 +133,9 @@ struct RunResult {
+         const bool tree_arm = config.arm == "tree";
+         Context context(model, n_ctx, static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
+                         static_cast<std::uint32_t>(config.branches), tree_arm,
+-                        config.threads, config.flash_attn);
++                        config.threads, config.flash_attn, config.kv_f32, config.trace_attention);
+         const auto prompt = make_tokens(config.prefix, model.info().n_vocab, 0);
++        if (config.phase_markers) { std::cout << "PROFILE_PHASE,prefill" << std::endl; }
+         const auto start_prefill = std::chrono::steady_clock::now();
+         std::optional<LlamaBackend> llama_backend;
+         std::optional<KvRadixTree> tree;
+@@ -160,6 +167,7 @@ struct RunResult {
+                 std::chrono::steady_clock::now() - start_prefill)
+                 .count();
+ 
++        if (config.phase_markers) { std::cout << "PROFILE_PHASE,fork" << std::endl; }
+         std::vector<double> fork_us;
+         if (tree_arm) {
+             const auto fork_start = std::chrono::steady_clock::now();
+@@ -193,6 +201,7 @@ struct RunResult {
+         }
+         const auto initial_tokens = next_tokens;
+         std::vector<std::vector<std::vector<float>>> verification_logits(config.branches);
++        if (config.phase_markers) { std::cout << "PROFILE_PHASE,decode" << std::endl; }
+         std::vector<double> step_us;
+         step_us.reserve(config.suffix);
+         std::vector<BackendPos> positions(config.branches);
+@@ -226,6 +235,7 @@ struct RunResult {
+             }
+         }
+ 
++        if (config.phase_markers) { std::cout << "PROFILE_PHASE,complete" << std::endl; }
+         std::vector<std::vector<float>> final_logits(config.branches);
+         for (std::size_t branch = 0; branch < config.branches; ++branch) {
+             final_logits[branch] = context.logits_ith(
+@@ -327,7 +337,7 @@ struct CorrectnessResult {
+         Context context(model, test_result.n_ctx,
+                         static_cast<std::uint32_t>(std::max<std::size_t>(128, config.branches)),
+                         static_cast<std::uint32_t>(config.branches),
+-                        config.arm == "tree", config.threads, config.flash_attn);
++                        config.arm == "tree", config.threads, config.flash_attn, config.kv_f32, config.trace_attention);
+         if (context.prefill(0, prompt, 0) != DecodeStatus::Ok) {
+             std::cerr << "Verification error: independent prefill failed on branch "
+                       << branch << "\n";
+@@ -446,6 +456,16 @@ struct CorrectnessResult {
+             config.prefix = std::stoull(require_value(argument));
+         } else if (argument == "--suffix") {
+             config.suffix = std::stoull(require_value(argument));
++        } else if (argument == "--kv-type") {
++            const std::string value = require_value(argument);
++            if (value != "f16" && value != "f32") {
++                throw std::invalid_argument("kv-type must be f16 or f32");
++            }
++            config.kv_f32 = value == "f32";
++        } else if (argument == "--attention-shapes") {
++            config.trace_attention = true;
++        } else if (argument == "--phase-markers") {
++            config.phase_markers = true;
+         } else if (argument == "--threads") {
+             config.threads = std::stoi(require_value(argument));
+         } else if (argument == "--flash-attn") {
+@@ -463,6 +483,8 @@ struct CorrectnessResult {
+             config.n_ctx = static_cast<std::uint32_t>(std::stoul(require_value(argument)));
+         } else if (argument == "--warmup") {
+             config.warmup = std::stoull(require_value(argument));
++        } else if (argument == "--verify-batched") {
++            config.verify_batched = true;
+         } else if (argument == "--verify") {
+             config.verify = true;
+         } else if (argument == "--discovery-only") {
+@@ -481,7 +503,7 @@ struct CorrectnessResult {
+         throw std::invalid_argument(
+             "usage: ie_tree_bench --model <path> --arm <naive|tree> "
+             "--b <branches> --prefix <tokens> --suffix <tokens> [--threads <N>] "
+-            "[--flash-attn <auto|on|off>] [--n-ctx <N>] [--warmup <N>] [--verify] [--single]");
++            "[--kv-type <f16|f32>] [--flash-attn <auto|on|off>] [--n-ctx <N>] [--warmup <N>] [--verify] [--single]");
+     }
+     return config;
+ }
+@@ -502,6 +524,7 @@ int main(int argc, char** argv) {
+     try {
+         const Config config = parse_args(argc, argv);
+         const Model model(config.model_path);
++        const std::size_t kappa_bytes = model.info().kappa_bytes * (config.kv_f32 ? 2U : 1U);
+         const std::size_t n_ctx_pred = config.arm == "naive"
+                                            ? config.branches *
+                                                  pad256(config.prefix + config.suffix)
+@@ -541,12 +564,14 @@ int main(int argc, char** argv) {
+ 
+         // Correctness verification (only when requested, to avoid contaminating latency measurements)
+         std::optional<CorrectnessResult> correctness;
+-        if (config.verify) {
+-            const auto verification_run = run_once(model, config, n_ctx_to_use);
++        if (config.verify || config.verify_batched) {
++            Config verification_config = config;
++            verification_config.verify = true;
++            const auto verification_run = run_once(model, verification_config, n_ctx_to_use);
+             if (!verification_run.has_value()) {
+                 throw std::runtime_error("untimed verification workload failed");
+             }
+-            Config paired_config = config;
++            Config paired_config = verification_config;
+             paired_config.arm = config.arm == "tree" ? "naive" : "tree";
+             const auto paired_capacity = paired_config.arm == "naive"
+                 ? config.branches * pad256(config.prefix + config.suffix)
+@@ -564,15 +589,15 @@ int main(int argc, char** argv) {
+                       << "," << csv_value(batched.token_match_rate)
+                       << "," << csv_value(batched.max_abs_logit_diff)
+                       << "," << csv_value(batched.mean_abs_logit_diff)
+-                      << "," << (batched.passed ? "PASSED" : "FAILED") << "\n";
++                      << "," << (batched.passed ? "PASSED" : "FAILED")
++                      << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
++            if (config.verify) {
+             correctness = check_correctness(model, config, verification_run.value());
+-            if (!batched.passed) {
+-                correctness->passed = false;
+-            }
+             if (!correctness.has_value()) {
+                 std::cerr << "Verification failed to complete\n";
+                 return 2;
+             }
++            correctness->passed = correctness->passed && batched.passed;
+             std::cout << "\n=== Correctness Verification ===\n"
+                       << "Token match rate: " << std::fixed << std::setprecision(4)
+                       << (correctness->token_match_rate * 100.0) << "%\n"
+@@ -590,16 +615,21 @@ int main(int argc, char** argv) {
+                       << csv_value(correctness->token_match_rate) << ","
+                       << csv_value(correctness->max_abs_logit_diff) << ","
+                       << csv_value(correctness->mean_abs_logit_diff) << ","
+-                      << (correctness->passed ? "PASSED" : "FAILED") << "\n";
++                      << (correctness->passed ? "PASSED" : "FAILED")
++                      << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
+ 
+             if (!correctness->passed) {
+                 std::cerr << "Verification failure: outputs do not match within tolerance (match_rate >= 1.0, max_diff <= 1e-3)\n";
+                 return 2;
+             }
++            } else if (!batched.passed) {
++                std::cerr << "Batched naive/tree parity failed\n";
++                return 2;
++            }
+         }
+ 
+         const double kv_bytes = static_cast<double>(result->n_ctx) *
+-                                static_cast<double>(model.info().kappa_bytes);
++                                static_cast<double>(kappa_bytes);
+         const double rho_pred = static_cast<double>(config.branches) *
+                                 static_cast<double>(config.prefix + config.suffix) /
+                                 static_cast<double>(config.prefix +
+@@ -618,10 +648,11 @@ int main(int argc, char** argv) {
+                   << "b/P/S: " << config.branches << "/" << config.prefix << "/"
+                   << config.suffix << "\n"
+                   << "threads: " << config.threads << "\n"
++                  << "kv_type: " << (config.kv_f32 ? "f32" : "f16") << "\n"
+                   << "flash_attn: " << config.flash_attn << "\n"
+                   << "n_ctx predicted/measured: " << n_ctx_pred << "/"
+                   << result->n_ctx << "\n"
+-                  << "kappa bytes: " << model.info().kappa_bytes << "\n"
++                  << "kappa bytes: " << kappa_bytes << "\n"
+                   << "KV bytes: " << static_cast<std::uint64_t>(kv_bytes) << "\n"
+                   << "step us p50/p90/p99: " << steps_p50 << "/" << steps_p90
+                   << "/" << steps_p99 << "\n"
+@@ -631,7 +662,7 @@ int main(int argc, char** argv) {
+         std::cout << "CSV," << std::filesystem::path(config.model_path).filename().string()
+                   << "," << config.arm << "," << config.branches << ","
+                   << config.prefix << "," << config.suffix << "," << result->n_ctx
+-                  << "," << n_ctx_pred << "," << model.info().kappa_bytes << ","
++                  << "," << n_ctx_pred << "," << kappa_bytes << ","
+                   << static_cast<std::uint64_t>(kv_bytes) << ",NA," << csv_value(rho_pred)
+                   << "," << csv_value(result->prefill_ms) << ","
+                   << csv_value(percentile(result->fork_us, 0.50)) << ","
+@@ -656,7 +687,7 @@ int main(int argc, char** argv) {
+                   << config.prefix << "," << config.suffix << ","
+                   << config.threads << "," << config.flash_attn << ","
+                   << result->n_ctx << "," << n_ctx_pred << ","
+-                  << model.info().kappa_bytes << ","
++                  << kappa_bytes << ","
+                   << static_cast<std::uint64_t>(kv_bytes) << ","
+                   << csv_value(rho_pred) << ","
+                   << csv_value(result->prefill_ms) << ","
+@@ -676,7 +707,7 @@ int main(int argc, char** argv) {
+         } else {
+             std::cout << "NA,NA,NA,NA";
+         }
+-        std::cout << "\n";
++        std::cout << "," << (config.kv_f32 ? "f32" : "f16") << "\n";
+     } catch (const std::exception& error) {
+         std::cerr << "ie_tree_bench: " << error.what() << "\n";
+         return 1;
+diff --git a/scripts/analyze_report3.py b/scripts/analyze_report3.py
+index 362caa6..7004b70 100644
+--- a/scripts/analyze_report3.py
++++ b/scripts/analyze_report3.py
+@@ -9,24 +9,26 @@ import matplotlib
+ matplotlib.use("Agg")
+ import matplotlib.pyplot as plt
+ 
+-KEYS = ["model", "arm", "b", "P", "S", "threads", "flash_attn"]
++KEYS = ["model", "arm", "b", "P", "S", "threads", "flash_attn", "kv_type"]
+ METRICS = ["n_ctx", "kv_bytes", "prefill_ms", "fork_us_p50", "fork_us_p99",
+            "step_us_p50", "step_us_p90", "step_us_p99", "tok_per_s",
+            "private_bytes", "peak_ws_bytes"]
+ 
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("directory", nargs="?", default="results/report3/continuation")
++    parser.add_argument("directory", nargs="?", default="results/report3/final/campaign")
+     args = parser.parse_args()
+     root = Path(args.directory)
+     df = pd.read_csv(root / "raw_trials.csv")
++    if "kv_type" not in df.columns:
++        df["kv_type"] = "f16"
+     if df.empty:
+         raise ValueError("No measured trials available")
+     required = KEYS + METRICS + ["trial", "kappa_bytes"]
+     missing = set(required) - set(df.columns)
+     if missing:
+         raise ValueError(f"Missing columns: {sorted(missing)}")
+-    numeric = [c for c in required if c not in ("model", "arm")]
++    numeric = [c for c in required if c not in ("model", "arm", "kv_type")]
+     for c in numeric:
+         df[c] = pd.to_numeric(df[c], errors="raise")
+     if not np.isfinite(df[numeric].to_numpy()).all():
+@@ -52,10 +54,10 @@ def main():
+     figures = root / "figures"
+     figures.mkdir(exist_ok=True)
+     # Each figure fixes model, prefix, suffix, threads, and attention mode.
+-    controls = ["model", "P", "S", "threads", "flash_attn"]
++    controls = ["model", "P", "S", "threads", "flash_attn", "kv_type"]
+     for setting, subset in summary.groupby(controls):
+-        model, p, s, threads, fa = setting
+-        label = f"{Path(model).stem}-P{p}-S{s}-t{threads}-fa{fa}"
++        model, p, s, threads, fa, kv = setting
++        label = f"{Path(model).stem}-P{p}-S{s}-t{threads}-fa{fa}-{kv}"
+         fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+         for arm, data in subset.groupby("arm"):
+             data = data.sort_values("b")
+@@ -66,8 +68,9 @@ def main():
+                     yerr=data[f"{metric}_iqr"] * scale / 2, marker="o", label=arm,
+                     capsize=3)
+                 ax.set(xlabel="Branches", ylabel=ylabel)
++                ax.set_xticks(sorted(data.b.unique()))
+                 ax.legend()
+-        fig.suptitle(f"P={p}, S={s}, threads={threads}, FA={fa}; median +/- half IQR across trials")
++        fig.suptitle(f"P={p}, S={s}, threads={threads}, FA={fa}, KV={kv}; median +/- half IQR across trials")
+         fig.tight_layout()
+         fig.savefig(figures / f"performance-{label}.png", dpi=160)
+         plt.close(fig)
+@@ -78,11 +81,12 @@ def main():
+                 ["Estimated configured KV", "Measured private memory", "Measured peak working set"]):
+                 ax.plot(data.b, data[f"{metric}_median"] / 1e6, marker="o", label=arm)
+                 ax.set(xlabel="Branches", ylabel="MB (decimal)", title=title)
++                ax.set_xticks(sorted(data.b.unique()))
+                 ax.legend()
+         fig.tight_layout()
+         fig.savefig(figures / f"memory-{label}.png", dpi=160)
+         plt.close(fig)
+-    for setting, subset in summary.groupby(["model", "b", "P", "S", "flash_attn"]):
++    for setting, subset in summary.groupby(["model", "b", "P", "S", "flash_attn", "kv_type"]):
+         if subset.threads.nunique() < 2:
+             continue
+         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+@@ -93,18 +97,19 @@ def main():
+                 ax.errorbar(data.threads, data[f"{metric}_median"] * scale,
+                     yerr=data[f"{metric}_iqr"] * scale / 2, marker="o", label=arm)
+                 ax.set(xlabel="CPU threads", ylabel=ylabel)
++                ax.set_xticks(sorted(data.threads.unique()))
+                 ax.legend()
+         name = "-".join(map(str, setting))
+-        fig.suptitle(f"{setting}; across-trial median +/- half IQR")
++        fig.suptitle(f"b={setting[1]}, P={setting[2]}, S={setting[3]}, FA={setting[4]}, KV={setting[5]}; median +/- half IQR")
+         fig.tight_layout()
+         fig.savefig(figures / f"threads-{name}.png", dpi=160)
+         plt.close(fig)
+     # Compare arms only at identical controlled settings.
+-    paired = summary.pivot(index=["model", "b", "P", "S", "threads", "flash_attn"],
++    paired = summary.pivot(index=["model", "b", "P", "S", "threads", "flash_attn", "kv_type"],
+                            columns="arm", values=["prefill_ms_median", "step_us_p50_median", "kv_bytes_median"])
+     paired.columns = ["_".join(c) for c in paired.columns]
+     paired.to_csv(root / "comparisons.csv")
+-    bandwidth_files = sorted(root.glob("bandwidth*.csv"))
++    bandwidth_files = sorted(root.glob("bandwidth-*.csv")) or ([root / "bandwidth.csv"] if (root / "bandwidth.csv").exists() else [])
+     if bandwidth_files:
+         bw = pd.read_csv(bandwidth_files[-1])
+         if not np.isfinite(bw.select_dtypes(include="number").to_numpy()).all():
+@@ -125,13 +130,31 @@ def main():
+         traffic["modeled_transfer_time_ms"] = (
+             traffic.modeled_mean_kv_read_bytes_per_step / (traffic.median_gb_s * 1e9) * 1000)
+         traffic.to_csv(root / "modeled_kv_transfer.csv", index=False)
+-    complete = sum(1 for _, g in df.groupby(["model", "b", "P", "S", "threads", "flash_attn"])
++    complete = sum(1 for _, g in df.groupby(["model", "b", "P", "S", "threads", "flash_attn", "kv_type"])
+                    if set(g.arm) == {"naive", "tree"})
+     expected = {(a,b,p,200) for a in ["naive", "tree"] for b in [2,4,8,16] for p in [1024,2048]}
+     observed = {(r.arm,r.b,r.P,r.S) for r in df.itertuples()}
+     audit = dict(trials=len(df), configurations=len(summary), paired_configurations=complete,
+                  missing_primary_configurations=sorted(expected-observed),
+                  variability_note="IQR and sample std use independent process trials; std undefined for n=1. Error bars are descriptive, not confidence intervals.")
++    environment_path = root / "environment.json"
++    if environment_path.exists():
++        environment = json.loads(environment_path.read_text())
++        identity = environment.get("identity", {})
++        baseline_threads = identity.get("threads", 2)
++        baseline_fa = identity.get("default_flash_attn", identity.get("flash_attn", 1))
++        baseline_kv = identity.get("kv_type", "f16").split()[0]
++        baseline = df[(df.threads == baseline_threads) & (df.flash_attn == baseline_fa) & (df.kv_type == baseline_kv)]
++        coverage = []
++        for arm in ["naive", "tree"]:
++            for branches in [2, 4, 8, 16]:
++                for prefix in [1024, 2048]:
++                    count = len(baseline[(baseline.arm == arm) & (baseline.b == branches) & (baseline.P == prefix) & (baseline.S == 200)])
++                    coverage.append(dict(arm=arm,b=branches,P=prefix,S=200,threads=baseline_threads,flash_attn=baseline_fa,kv_type=baseline_kv,repetitions=count,target=5,remaining=max(0,5-count)))
++        pd.DataFrame(coverage).to_csv(root / "matrix_coverage.csv", index=False)
++        audit["primary_measured_trials"] = sum(row["repetitions"] for row in coverage)
++        audit["primary_remaining_trials"] = sum(row["remaining"] for row in coverage)
++        audit["primary_target_trials"] = 80
+     (root / "validation.json").write_text(json.dumps(audit, indent=2))
+     print(json.dumps(audit, indent=2))
+     print(f"Wrote summary, comparisons, and figures to {root}")
+diff --git a/scripts/run_benchmarks_report3.ps1 b/scripts/run_benchmarks_report3.ps1
+index 57ec1da..3d7ec99 100644
+--- a/scripts/run_benchmarks_report3.ps1
++++ b/scripts/run_benchmarks_report3.ps1
+@@ -1,14 +1,17 @@
+ param(
+     [string] $BuildDir = "build/Release",
+     [Alias("ModelPath")][string] $Model135 = "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+-    [string] $OutputDir = "results/report3/continuation",
++    [string] $OutputDir = "results/report3/final/campaign",
++    [ValidateSet("f16","f32")][string] $KVType = "f16",
++    [ValidateSet(0,1)][int] $FlashAttention = 1,
+     [Alias("Repetitions")][ValidateRange(1,100)][int] $Trials = 5,
+     [ValidateRange(1,100)][int] $Warmup = 1,
+-    [ValidateSet("All","Matrix","Threads","Attention","Correctness","Bandwidth")][string] $Experiment = "All",
++    [ValidateSet("All","Matrix","Threads","Attention","Correctness","Parity","Bandwidth")][string] $Experiment = "All",
+     [int[]] $Branches = @(2,4,8,16),
+     [int[]] $Prefixes = @(1024,2048),
+     [ValidateSet("tree","naive")][string] $VerificationArm = "tree",
+     [ValidateSet(0,1)][int[]] $AttentionModes = @(1,0),
++    [ValidateRange(1,1000000)][int] $VerificationSuffix = 64,
+     [int] $ProfileBranches = 8,
+     [int] $ProfilePrefix = 1024,
+     [ValidateRange(1,256)][int] $Threads = 2,
+@@ -33,7 +36,7 @@ $logicalCores = [Environment]::ProcessorCount
+ $hardwareJson = python -c "import ctypes,json; from ctypes import wintypes; x=(ctypes.c_ulonglong*8)(); x[0]=64; ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(x)); print(json.dumps({'memory_bytes':x[1]}))"
+ if ($LASTEXITCODE -ne 0) { throw "Could not collect memory metadata using Python" }
+ $hardware = $hardwareJson | ConvertFrom-Json
+-$sourceFiles = @(git ls-files --cached --others --exclude-standard core src apps tests scripts CMakeLists.txt)
++$sourceFiles = @(git ls-files --cached --others --exclude-standard core src apps bench tests scripts CMakeLists.txt)
+ $sourceHashes = [ordered]@{}
+ foreach ($file in ($sourceFiles | Sort-Object -Unique)) {
+     if (Test-Path -LiteralPath $file -PathType Leaf) {
+@@ -50,14 +53,16 @@ $identity = [ordered]@{
+     model_path = $Model135
+     threads = $Threads
+     warmup_processes_per_trial = $Warmup
+-    flash_attn = 1
++    default_flash_attn = $FlashAttention
+     n_batch = 128
+     sampling = "greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping"
+-    kv_type = "f16 K and V; CPU only"
++    kv_type = "$KVType K and V; CPU only"
++    latency_quantile = "linear interpolation (type 7)"
++    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
+ }
+ $identityJson = $identity | ConvertTo-Json -Depth 8 -Compress
+ $cacheFile = (Resolve-Path (Join-Path (Split-Path $BuildDir) "CMakeCache.txt")).Path
+-$cacheMetadata = @([IO.File]::ReadAllLines($cacheFile) -match "^(CMAKE_CXX_COMPILER|CMAKE_GENERATOR|CMAKE_BUILD_TYPE|IE_WITH_LLAMA)")
++$cacheMetadata = @([IO.File]::ReadAllLines($cacheFile) -match "^(CMAKE_CXX_COMPILER|CMAKE_GENERATOR|CMAKE_BUILD_TYPE|CMAKE_CXX_FLAGS|IE_WITH_LLAMA|IE_PROFILE_SYMBOLS|IE_TEST_GGUF|GGML_)")
+ if (Test-Path $envPath) {
+     $old = Get-Content $envPath -Raw | ConvertFrom-Json
+     if ($old.identity_json -cne $identityJson) {
+@@ -87,7 +92,7 @@ if (Test-Path $envPath) {
+ function Initialize-Csv($Path, $Header) {
+     if (-not (Test-Path $Path)) { Set-Content $Path $Header }
+ }
+-Initialize-Csv $rawPath "trial,model,arm,b,P,S,threads,flash_attn,n_ctx,n_ctx_pred,kappa_bytes,kv_bytes,rho_pred,prefill_ms,fork_us_p50,fork_us_p99,step_us_p50,step_us_p90,step_us_p99,jitter_us,tok_per_s,private_bytes,peak_ws_bytes"
++Initialize-Csv $rawPath "trial,model,arm,b,P,S,threads,flash_attn,n_ctx,n_ctx_pred,kappa_bytes,kv_bytes,rho_pred,prefill_ms,fork_us_p50,fork_us_p99,step_us_p50,step_us_p90,step_us_p99,jitter_us,tok_per_s,private_bytes,peak_ws_bytes,kv_type"
+ Initialize-Csv $ctxPath "model,arm,b,P,S,threads,flash_attn,n_ctx"
+ $existing = @{}
+ foreach ($r in @(Import-Csv $rawPath)) {
+@@ -98,12 +103,20 @@ foreach ($r in @(Import-Csv $ctxPath)) {
+     $contexts["$($r.arm)|$($r.b)|$($r.P)|$($r.S)|$($r.threads)|$($r.flash_attn)"] = [int]$r.n_ctx
+ }
+ function Invoke-Native($Arguments, $LogName) {
++    $LogName = "$LogName-$(Get-Date -Format yyyyMMddHHmmssfff)"
+     $stdout = Join-Path $logDir "$LogName.stdout.log"
+     $stderr = Join-Path $logDir "$LogName.stderr.log"
+     # Start-Process separates stderr reliably under Windows PowerShell 5.1.
+     $quoted = @($Arguments | ForEach-Object { '"' + ([string]$_).Replace('"','\"') + '"' })
+     $p = Start-Process -FilePath $treeBenchExe -ArgumentList $quoted -NoNewWindow -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+     $lines = @(Get-Content $stdout)
++    foreach ($line in $lines) {
++        if ($line -like "CSV_BATCH_VERIFY,*") {
++            $batchPath = Join-Path $OutputDir "batched_correctness.csv"
++            Initialize-Csv $batchPath "model,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status,kv_type"
++            Add-Content $batchPath $line.Substring(17)
++        }
++    }
+     if ($p.ExitCode -ne 0) {
+         $v = $lines | Where-Object { $_ -like "CSV_VERIFY,*" } | Select-Object -Last 1
+         if ($v -and (Test-Path $corrPath)) { Add-Content $corrPath $v.Substring(11) }
+@@ -119,7 +132,7 @@ function Invoke-Trial($Arm, $B, $P, $S, $T, $FA, $Trial) {
+     $ctxKey = "$Arm|$B|$P|$S|$T|$FA"
+     $label = "$Arm-b$B-p$P-s$S-t$T-fa$FA"
+     $faText = if ($FA -eq 1) { "on" } else { "off" }
+-    $base = @("--model",$Model135,"--arm",$Arm,"--b",$B,"--prefix",$P,"--suffix",$S,"--threads",$T,"--flash-attn",$faText)
++    $base = @("--model",$Model135,"--arm",$Arm,"--b",$B,"--prefix",$P,"--suffix",$S,"--threads",$T,"--flash-attn",$faText,"--kv-type",$KVType)
+     if (-not $contexts.ContainsKey($ctxKey)) {
+         Write-Host "Discovering capacity: $label"
+         $out = Invoke-Native ($base + @("--discovery-only")) "$label-discovery"
+@@ -136,19 +149,24 @@ function Invoke-Trial($Arm, $B, $P, $S, $T, $FA, $Trial) {
+     $line = $out | Where-Object { $_ -like "CSV_EXTENDED,*" } | Select-Object -Last 1
+     if (-not $line) { throw "Missing CSV_EXTENDED for $label" }
+     $parts = $line.Substring(13).Split(',')
+-    if ($parts.Count -ne 26) { throw "Unexpected CSV field count: $($parts.Count)" }
+-    Add-Content $rawPath ("$Trial," + ($parts[0..21] -join ','))
++    if ($parts.Count -ne 27) { throw "Unexpected CSV field count: $($parts.Count)" }
++    Add-Content $rawPath ("$Trial," + ($parts[0..21] -join ',') + ",$($parts[26])")
+     $existing[$key] = $true
+     $script:completed++
+     Write-Host "Recorded $label trial $Trial; tokens/s=$($parts[19])"
+ }
+-if ($Experiment -in @("All","Correctness")) {
+-    Initialize-Csv $corrPath "model,arm,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status"
++if ($Experiment -in @("All","Correctness","Parity")) {
++    Initialize-Csv $corrPath "model,arm,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status,kv_type"
++    $verifyFlag = if ($Experiment -eq "Parity") { "--verify-batched" } else { "--verify" }
+     foreach ($fa in $AttentionModes) {
+         foreach ($b in $Branches) {
+             foreach ($p in $Prefixes) {
+                 $mode = if ($fa -eq 1) { "on" } else { "off" }
+-                $out = Invoke-Native @("--model",$Model135,"--arm",$VerificationArm,"--b",$b,"--prefix",$p,"--suffix",64,"--threads",$Threads,"--flash-attn",$mode,"--verify") "verify-$VerificationArm-b$b-p$p-fa$fa"
++                $out = Invoke-Native @("--model",$Model135,"--arm",$VerificationArm,"--b",$b,"--prefix",$p,"--suffix",$VerificationSuffix,"--threads",$Threads,"--flash-attn",$mode,"--kv-type",$KVType,$verifyFlag) "verify-$VerificationArm-b$b-p$p-fa$fa"
++                if ($Experiment -eq "Parity") {
++                    Write-Host ($out | Where-Object { $_ -like "CSV_BATCH_VERIFY,*" })
++                    continue
++                }
+                 $line = $out | Where-Object { $_ -like "CSV_VERIFY,*" } | Select-Object -Last 1
+                 if (-not $line) { throw "Missing verification result" }
+                 Add-Content $corrPath $line.Substring(11)
+@@ -159,14 +177,14 @@ if ($Experiment -in @("All","Correctness")) {
+ }
+ if ($Experiment -in @("All","Matrix")) {
+     foreach ($b in $Branches) { foreach ($p in $Prefixes) { for ($r=1; $r -le $Trials; $r++) {
+-        foreach ($arm in @("naive","tree")) { Invoke-Trial $arm $b $p 200 $Threads 1 $r }
++        foreach ($arm in @("naive","tree")) { Invoke-Trial $arm $b $p 200 $Threads $FlashAttention $r }
+     } } }
+ }
+ if ($Experiment -in @("All","Threads")) {
+     foreach ($t in @(1,2,4,8)) {
+         if ($t -gt $logicalCores) { continue }
+         for ($r=1; $r -le $Trials; $r++) { foreach ($arm in @("naive","tree")) {
+-            Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $t 1 $r
++            Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $t $FlashAttention $r
+         } }
+     }
+ }
+diff --git a/src/llm/llama_wrap.cpp b/src/llm/llama_wrap.cpp
+index 8d79789..920421a 100644
+--- a/src/llm/llama_wrap.cpp
++++ b/src/llm/llama_wrap.cpp
+@@ -3,6 +3,8 @@
+ #include <algorithm>
+ #include <filesystem>
+ #include <limits>
++#include <iostream>
++#include <string_view>
+ #include <stdexcept>
+ 
+ namespace inference_engine::llm {
+@@ -93,7 +95,7 @@ llama_model* Model::handle() const noexcept { return model_; }
+ 
+ Context::Context(const Model& model, std::uint32_t n_ctx,
+                  std::uint32_t n_batch, std::uint32_t n_seq_max,
+-                 bool kv_unified, int32_t n_threads, int32_t flash_attn)
++                 bool kv_unified, int32_t n_threads, int32_t flash_attn, bool kv_f32, bool trace_attention)
+     : context_(nullptr), n_batch_(n_batch), n_seq_max_(n_seq_max),
+       n_vocab_(model.info().n_vocab) {
+     if (n_ctx == 0 || n_batch == 0 || n_seq_max == 0 ||
+@@ -108,6 +110,25 @@ Context::Context(const Model& model, std::uint32_t n_ctx,
+     params.n_outputs_max = n_batch;
+     params.kv_unified = kv_unified;
+     params.no_perf = false;
++    params.type_k = kv_f32 ? GGML_TYPE_F32 : GGML_TYPE_F16;
++    params.type_v = kv_f32 ? GGML_TYPE_F32 : GGML_TYPE_F16;
++    if (trace_attention) {
++        params.cb_eval = [](ggml_tensor* tensor, bool ask, void*) -> bool {
++            if (ask && tensor->op == GGML_OP_MUL_MAT &&
++                std::string_view(ggml_get_name(tensor)).starts_with("kq")) {
++                std::cout << "CSV_ATTN," << ggml_get_name(tensor);
++                for (int source = 0; source < 2; ++source) {
++                    for (int dim = 0; dim < 4; ++dim) {
++                        std::cout << "," << tensor->src[source]->ne[dim];
++                    }
++                }
++                for (int dim = 0; dim < 4; ++dim) { std::cout << "," << tensor->ne[dim]; }
++                std::cout << "\n";
++            }
++            // Tensor dimensions need no materialization or backend synchronization.
++            return !ask;
++        };
++    }
+     if (n_threads > 0) {
+         params.n_threads = n_threads;
+         params.n_threads_batch = n_threads;
+diff --git a/src/llm/llama_wrap.hpp b/src/llm/llama_wrap.hpp
+index ab49a4b..665baa1 100644
+--- a/src/llm/llama_wrap.hpp
++++ b/src/llm/llama_wrap.hpp
+@@ -52,7 +52,7 @@ class Context {
+ public:
+     Context(const Model& model, std::uint32_t n_ctx, std::uint32_t n_batch,
+             std::uint32_t n_seq_max, bool kv_unified, int32_t n_threads = 0,
+-            int32_t flash_attn = -1);
++            int32_t flash_attn = -1, bool kv_f32 = false, bool trace_attention = false);
+     ~Context();
+ 
+     Context(const Context&) = delete;

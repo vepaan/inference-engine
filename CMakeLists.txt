@@ -191,3 +191,25 @@ if(IE_WITH_LLAMA)
 		)
 	endif()
 endif()
+
+# Keep profiling symbols separate from ordinary Release measurement builds.
+option(IE_PROFILE_SYMBOLS "Emit PDBs for optimized CPU instruction-pointer profiling" OFF)
+if(MSVC AND IE_PROFILE_SYMBOLS)
+    foreach(ie_symbol_target kv_tree ie_llm llama ggml ggml-base ggml-cpu ie_tree_bench)
+        if(TARGET ${ie_symbol_target})
+            target_compile_options(${ie_symbol_target} PRIVATE /Zi)
+        endif()
+    endforeach()
+    if(TARGET ie_tree_bench)
+        target_link_options(ie_tree_bench PRIVATE /DEBUG:FULL /OPT:REF /OPT:ICF)
+    endif()
+endif()
+set(IE_TEST_GGUF "" CACHE FILEPATH "Optional GGUF for real-model correctness regression")
+if(BUILD_TESTING AND IE_WITH_LLAMA AND IE_TEST_GGUF)
+    add_test(NAME ie_real_correctness_f32 COMMAND ie_tree_bench
+        --model ${IE_TEST_GGUF} --arm tree --b 2 --prefix 1024 --suffix 8
+        --threads 2 --flash-attn off --kv-type f32 --n-ctx 1536 --verify)
+    add_test(NAME ie_real_correctness_f16_serial COMMAND ie_tree_bench
+        --model ${IE_TEST_GGUF} --arm tree --b 2 --prefix 1024 --suffix 64
+        --threads 1 --flash-attn on --kv-type f16 --n-ctx 1536 --verify)
+endif()

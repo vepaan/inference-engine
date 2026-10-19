@@ -1,0 +1,30 @@
+{
+  "command": [
+    "build/Release/ie_tree_bench.exe",
+    "--model",
+    "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+    "--arm",
+    "tree",
+    "--b",
+    "2",
+    "--prefix",
+    "1024",
+    "--suffix",
+    "64",
+    "--threads",
+    "1",
+    "--flash-attn",
+    "on",
+    "--kv-type",
+    "f16",
+    "--n-ctx",
+    "1536",
+    "--verify"
+  ],
+  "exit_code": 0,
+  "metrics": [
+    "CSV_BATCH_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,64,1,1,1.000000,0.000000,0.000000,PASSED,f16",
+    "CSV_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,64,1,1,1.000000,0.000000,0.000000,PASSED,f16",
+    "CSV_EXTENDED,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,64,1,1,1536,1280,23040,35389440,1.888889,5729.522200,301.550000,356.871000,43502.200000,46649.250000,48287.637000,4785.437000,45.488329,138563584,181174272,0.000000,0.000000,1.000000,PASSED,f16"
+  ]
+}

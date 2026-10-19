@@ -1,0 +1,4 @@
+run,arm,phase,observed_wall_s,mean_cpu_core_equivalents,peak_rss_bytes
+profile-pilot,tree,decode,0.31450420001056045,6.856029267423447,219697152
+profile-pilot,tree,load,0.16273969999747342,0.9601222074418578,53764096
+profile-pilot,tree,prefill,2.910909799975343,6.564743091717189,219480064

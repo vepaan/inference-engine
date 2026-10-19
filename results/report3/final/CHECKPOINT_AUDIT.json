@@ -1,0 +1,15 @@
+{
+  "checkpoint": "Correctness validation and report handoff; expanded performance campaign deferred",
+  "batched_configurations": 8,
+  "batched_steps_per_branch": 200,
+  "batched_generated_tokens_compared": 12000,
+  "all_batched_tokens_and_logits_exact": true,
+  "historical_measured_performance_trials": 10,
+  "new_measured_performance_trials": 0,
+  "source_snapshot_and_current_binary_hashes_verified": true,
+  "real_ctest_targets_passed": 4,
+  "mock_ctest_targets_passed": 2,
+  "tree_cases": 18,
+  "independent_context_multithread_parity": "unresolved; failures retained",
+  "profiling": "one pilot only; no paired bottleneck conclusion"
+}

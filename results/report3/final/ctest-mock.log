@@ -1,0 +1,51 @@
+Start testing: Oct 18 23:55 Central Daylight Time
+----------------------------------------------------------
+1/2 Testing: kv_tree_tests
+1/2 Test: kv_tree_tests
+Command: "C:/Users/ASUS/Documents/GitHub/inference-engine/build/report3_mock/Release/kv_tree_tests.exe"
+Directory: C:/Users/ASUS/Documents/GitHub/inference-engine/build/report3_mock
+"kv_tree_tests" start time: Oct 18 23:55 Central Daylight Time
+Output:
+----------------------------------------------------------
+PASS property_random_operations
+PASS differential_prefix_matching
+PASS split_edge_cases
+PASS slot_exhaustion_is_reported
+PASS commit_transfers_prefix_handle_to_leaf
+PASS commit_splits_shared_generated_prefix
+PASS commit_merges_identical_generated_edge
+PASS identical_prefix_insertion
+PASS partial_prefix_overlap
+PASS split_existing_radix_edges
+PASS repeated_forks
+PASS branch_release_order_lifo_fifo_interleaved
+PASS reference_count_ownership_invariants
+PASS sequence_slot_exhaustion_and_reuse
+PASS eviction_of_idle_branches_lru
+PASS tree_validation_after_repeated_mutations
+PASS split_preserves_unrelated_siblings
+PASS deterministic_randomized_fuzz_fixed_seed
+<end of output>
+Test time =   0.79 sec
+----------------------------------------------------------
+Test Passed.
+"kv_tree_tests" end time: Oct 18 23:55 Central Daylight Time
+"kv_tree_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: memory_bench_golden
+2/2 Test: memory_bench_golden
+Command: "C:/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe" "-NoProfile" "-ExecutionPolicy" "Bypass" "-File" "C:/Users/ASUS/Documents/GitHub/inference-engine/tests/check_golden.ps1" "C:/Users/ASUS/Documents/GitHub/inference-engine/build/report3_mock/Release/memory_bench.exe"
+Directory: C:/Users/ASUS/Documents/GitHub/inference-engine/build/report3_mock
+"memory_bench_golden" start time: Oct 18 23:55 Central Daylight Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   3.39 sec
+----------------------------------------------------------
+Test Passed.
+"memory_bench_golden" end time: Oct 18 23:56 Central Daylight Time
+"memory_bench_golden" time elapsed: 00:00:03
+----------------------------------------------------------
+
+End testing: Oct 18 23:56 Central Daylight Time

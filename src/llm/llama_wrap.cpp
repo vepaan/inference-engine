@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <iostream>
+#include <string_view>
 #include <stdexcept>
 
 namespace inference_engine::llm {
@@ -93,7 +95,7 @@ llama_model* Model::handle() const noexcept { return model_; }
 
 Context::Context(const Model& model, std::uint32_t n_ctx,
                  std::uint32_t n_batch, std::uint32_t n_seq_max,
-                 bool kv_unified, int32_t n_threads, int32_t flash_attn)
+                 bool kv_unified, int32_t n_threads, int32_t flash_attn, bool kv_f32, bool trace_attention)
     : context_(nullptr), n_batch_(n_batch), n_seq_max_(n_seq_max),
       n_vocab_(model.info().n_vocab) {
     if (n_ctx == 0 || n_batch == 0 || n_seq_max == 0 ||
@@ -108,6 +110,25 @@ Context::Context(const Model& model, std::uint32_t n_ctx,
     params.n_outputs_max = n_batch;
     params.kv_unified = kv_unified;
     params.no_perf = false;
+    params.type_k = kv_f32 ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    params.type_v = kv_f32 ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    if (trace_attention) {
+        params.cb_eval = [](ggml_tensor* tensor, bool ask, void*) -> bool {
+            if (ask && tensor->op == GGML_OP_MUL_MAT &&
+                std::string_view(ggml_get_name(tensor)).starts_with("kq")) {
+                std::cout << "CSV_ATTN," << ggml_get_name(tensor);
+                for (int source = 0; source < 2; ++source) {
+                    for (int dim = 0; dim < 4; ++dim) {
+                        std::cout << "," << tensor->src[source]->ne[dim];
+                    }
+                }
+                for (int dim = 0; dim < 4; ++dim) { std::cout << "," << tensor->ne[dim]; }
+                std::cout << "\n";
+            }
+            // Tensor dimensions need no materialization or backend synchronization.
+            return !ask;
+        };
+    }
     if (n_threads > 0) {
         params.n_threads = n_threads;
         params.n_threads_batch = n_threads;

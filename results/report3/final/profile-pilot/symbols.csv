@@ -1,0 +1,25 @@
+phase,symbol,samples,active_samples,cpu_delta_s,estimated_cpu_share
+decode,unresolved,22,13,0.859375,0.5288461538461539
+decode,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>",4,4,0.28125,0.17307692307692307
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",2,2,0.15625,0.09615384615384616
+decode,ggml_vec_dot_f32,2,2,0.125,0.07692307692307693
+decode,inference_engine::llm::Context::decode_lockstep,1,1,0.078125,0.04807692307692308
+decode,ggml_graph_compute_thread,1,1,0.0625,0.038461538461538464
+decode,ggml_vec_dot_q6_K_q8_K,1,1,0.0625,0.038461538461538464
+load,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",1,1,0.0625,0.4
+load,unresolved,13,1,0.046875,0.3
+load,llama_decode_text,1,1,0.046875,0.3
+load,replace_all,1,0,0.0,0.0
+prefill,unresolved,218,116,7.796875,0.42832618025751074
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",69,66,4.96875,0.2729613733905579
+prefill,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>",40,40,3.109375,0.17081545064377682
+prefill,ggml_vec_dot_f32,14,14,0.875,0.048068669527897
+prefill,ggml_compute_forward_soft_max_f32,6,6,0.40625,0.022317596566523604
+prefill,quantize_row_q8_0,4,3,0.234375,0.012875536480686695
+prefill,ggml_vec_swiglu_f32,3,3,0.203125,0.011158798283261802
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",2,2,0.140625,0.007725321888412017
+prefill,ggml_vec_soft_max_f32,2,2,0.140625,0.007725321888412017
+prefill,ggml_compute_forward_mul_mat_one_chunk,2,2,0.109375,0.006008583690987125
+prefill,ggml_gemm_q4_K_8x8_q8_K,1,1,0.078125,0.004291845493562232
+prefill,ggml_vec_dot_q6_K_q8_K,1,1,0.078125,0.004291845493562232
+prefill,ggml_quantize_mat_q8_K_4x8,1,1,0.0625,0.0034334763948497852

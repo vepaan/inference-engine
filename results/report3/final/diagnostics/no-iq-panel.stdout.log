@@ -1,0 +1,9 @@
+CSV_BATCH_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,8,8,1,1.000000,0.000000,0.000000,PASSED
+
+=== Correctness Verification ===
+Token match rate: 56.2500%
+Max absolute logit diff: 0.859098
+Mean absolute logit diff: 0.114336
+Status: FAILED
+
+CSV_VERIFY,SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,8,8,1,0.562500,0.859098,0.114336,FAILED

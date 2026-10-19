@@ -1,3 +1,5 @@
+> Latest checkpoint: [report-writing handoff](final/REPORT_READY.md). All eight long batched checks pass; independent-context multithreaded numerical differences remain. Performance numbers below remain the small committed dataset.
+
 # Progress Report 3 technical handoff
 
 This is implementation and experimental documentation, not an academic report.

@@ -52,7 +52,7 @@ class Context {
 public:
     Context(const Model& model, std::uint32_t n_ctx, std::uint32_t n_batch,
             std::uint32_t n_seq_max, bool kv_unified, int32_t n_threads = 0,
-            int32_t flash_attn = -1);
+            int32_t flash_attn = -1, bool kv_f32 = false, bool trace_attention = false);
     ~Context();
 
     Context(const Context&) = delete;

@@ -1,0 +1,413 @@
+elapsed_s,phase,thread,rip,cpu_delta_s,symbol
+0.05351259995950386,load,3076,0x7ff714f5ef60,0.0,replace_all
+0.05361869995249435,load,31380,0x7ff9dbe25a24,0.0,unresolved
+0.05368620000081137,load,29288,0x7ff9dbe25a24,0.0,unresolved
+0.053747600002679974,load,8548,0x7ff9dbe25a24,0.0,unresolved
+0.10645119997207075,load,3076,0x7ff714f37433,0.046875,llama_decode_text
+0.10656909999670461,load,31380,0x7ff9dbe25a24,0.0,unresolved
+0.10668569995323196,load,29288,0x7ff9dbe25a24,0.0,unresolved
+0.10683000000426546,load,8548,0x7ff9dbe25a24,0.0,unresolved
+0.16251179995015264,load,3076,0x7ff9c4a728e3,0.046875,unresolved
+0.1625897999620065,load,31380,0x7ff9dbe25a24,0.0,unresolved
+0.162657999957446,load,29288,0x7ff9dbe25a24,0.0,unresolved
+0.16273689997615293,load,8548,0x7ff9dbe25a24,0.0,unresolved
+0.23705279995920137,load,3076,0x7ff715135d6c,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.23713239998323843,load,31380,0x7ff9dbe25a24,0.0,unresolved
+0.2371984999626875,load,29288,0x7ff9dbe25a24,0.0,unresolved
+0.23726490000262856,load,8548,0x7ff9dbe25a24,0.0,unresolved
+0.38198259996715933,prefill,3076,0x7ff715135da1,0.15625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.3820869000046514,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.3821578999632038,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.38222139998106286,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.38228759996127337,prefill,356,0x7ff715135bb4,0.0,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.38235239998903126,prefill,9360,0x7ff9dbe223d4,0.0,unresolved
+0.3825187999755144,prefill,29760,0x7ff7151359f6,0.0,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.38263059995369986,prefill,30744,0x7ff9dbe223d4,0.0,unresolved
+0.3827068999526091,prefill,18864,0x7ff9dbe223d4,0.0,unresolved
+0.3827900000032969,prefill,22776,0x7ff7150d48d6,0.0,quantize_row_q8_0
+0.38286829995922744,prefill,16504,0x7ff715135af0,0.0,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.4654894999694079,prefill,3076,0x7ff7150d548c,0.078125,ggml_vec_dot_f32
+0.4655686999903992,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.4656348999706097,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.4657004000036977,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.465762099949643,prefill,356,0x7ff9c4a728b4,0.078125,unresolved
+0.46582280000438914,prefill,9360,0x7ff9d8f934e0,0.0625,unresolved
+0.46588759997393936,prefill,29760,0x7ff7151442d9,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+0.46595220000017434,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+0.46601979999104515,prefill,18864,0x7ff7151442d9,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+0.46608739998191595,prefill,22776,0x7ff9dbe223d4,0.0625,unresolved
+0.46614859998226166,prefill,16504,0x7ff9dbe223d4,0.0625,unresolved
+0.5396964999963529,prefill,3076,0x7ff7150d4971,0.078125,quantize_row_q8_0
+0.5397805999964476,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.5398853999795392,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.5399733999511227,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.5400384999811649,prefill,356,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5400971999624744,prefill,9360,0x7ff715135cc4,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5401603999780491,prefill,29760,0x7ff715135c35,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5402273999643512,prefill,30744,0x7ff715135de6,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5403063999838196,prefill,18864,0x7ff715135c30,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5403808999690227,prefill,22776,0x7ff715135c35,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.5404310000012629,prefill,16504,0x7ff715135c5d,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6169874999905005,prefill,3076,0x7ff715135e89,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6170566999935545,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.6171204999554902,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.6172062999685295,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.6173578999587335,prefill,356,0x7ff7150d4971,0.078125,quantize_row_q8_0
+0.617434499959927,prefill,9360,0x7ff715135d09,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6174957999610342,prefill,29760,0x7ff715135bbc,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6175677999854088,prefill,30744,0x7ff715135de6,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6176446999888867,prefill,18864,0x7ff715135d74,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.617702699964866,prefill,22776,0x7ff715135a0e,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6177733999793418,prefill,16504,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6939763999544084,prefill,3076,0x7ff715135c9f,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6940759999561124,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.6941517999512143,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.6942238999763504,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.6942989999661222,prefill,356,0x7ff9dbe223d4,0.078125,unresolved
+0.6943869999959134,prefill,9360,0x7ff7151362f0,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>"
+0.6944771999842487,prefill,29760,0x7ff7151365a3,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>"
+0.6945516999694519,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+0.6946232999907807,prefill,18864,0x7ff9dbe223d4,0.0625,unresolved
+0.6947130999760702,prefill,22776,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.6947839999920689,prefill,16504,0x7ff715135cc4,0.046875,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.7752767999772914,prefill,3076,0x7ff9dbe223d4,0.078125,unresolved
+0.7753754999721423,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.7754485000041313,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.7755194999626838,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.775616800005082,prefill,356,0x7ff9dbe223d4,0.078125,unresolved
+0.7756856000050902,prefill,9360,0x7ff9dbe223d4,0.078125,unresolved
+0.7757497999700718,prefill,29760,0x7ff7150d59ec,0.0625,ggml_vec_soft_max_f32
+0.7758216999936849,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+0.7758925999514759,prefill,18864,0x7ff715123e05,0.0625,ggml_compute_forward_soft_max_f32
+0.7759573999792337,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+0.7760311999591067,prefill,16504,0x7ff9d8f934f4,0.046875,unresolved
+0.8567078000050969,prefill,3076,0x7ff715135d30,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.8568090999615379,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.8569920999580063,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.857097799947951,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.8572112999972887,prefill,356,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.8573839999735355,prefill,9360,0x7ff715135c3b,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.8577241000020877,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+0.8578505999757908,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+0.8579240999533795,prefill,18864,0x7ff7150d5bc4,0.0625,ggml_vec_swiglu_f32
+0.8580240999581292,prefill,22776,0x7ff7150d5bc4,0.0625,ggml_vec_swiglu_f32
+0.8581026999745518,prefill,16504,0x7ff7151556f6,0.0625,ggml_quantize_mat_q8_K_4x8
+0.9407980999676511,prefill,3076,0x7ff715135c67,0.03125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.9408984999754466,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+0.9426133999950252,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+0.9427471999661066,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+0.942807899962645,prefill,356,0x7ff9dbe223d4,0.078125,unresolved
+0.9428795999847353,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+0.942960399959702,prefill,29760,0x7ff715135b95,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+0.9430266999988817,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+0.9431047999532893,prefill,18864,0x7ff9dbe223d4,0.03125,unresolved
+0.9431807999499142,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+0.9432612999808043,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+1.0223380999523215,prefill,3076,0x7ff9dbe223d4,0.09375,unresolved
+1.0224248999729753,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.0225011999718845,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.0225578999961726,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.0226162999751978,prefill,356,0x7ff9dbe223d4,0.0625,unresolved
+1.0226732000010088,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+1.022736899962183,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+1.0227981999632902,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+1.0228605999727733,prefill,18864,0x7ff715135c8f,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.0229403999983333,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+1.0230062999762595,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+1.1084717999910936,prefill,3076,0x7ff9dbe223d4,0.078125,unresolved
+1.108616899990011,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.1087573999539018,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.1088602999807335,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.1089291999815032,prefill,356,0x7ff9dbe223d4,0.0625,unresolved
+1.1090597999864258,prefill,9360,0x7ff9dbe223d4,0.078125,unresolved
+1.1091924999491312,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+1.1092745999922045,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+1.109445699956268,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+1.1095469999709167,prefill,22776,0x7ff9dbe223d4,0.0625,unresolved
+1.1096040999982506,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+1.1946133999736048,prefill,3076,0x7ff9dbe223d4,0.015625,unresolved
+1.1947199999704026,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.196113999991212,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.1962708999635652,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.1963427999871783,prefill,356,0x7ff9dbe223d4,0.0625,unresolved
+1.19666179997148,prefill,9360,0x7ff9dbe223d4,0.015625,unresolved
+1.200193299970124,prefill,29760,0x7ff9dbe223d4,0.0625,unresolved
+1.200314299960155,prefill,30744,0x7ff9dbe223d4,0.03125,unresolved
+1.2013423999887891,prefill,18864,0x7ff9dbe223d4,0.046875,unresolved
+1.2014709999784827,prefill,22776,0x7ff9dbe223d4,0.015625,unresolved
+1.2015447999583557,prefill,16504,0x7ff9dbe223d4,0.0625,unresolved
+1.3066511999932118,prefill,3076,0x7ff9dbe223d4,0.015625,unresolved
+1.3067457999568433,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.3068290999508463,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.3069067999604158,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.3069803999969736,prefill,356,0x7ff9dbe223d4,0.046875,unresolved
+1.3070585999521427,prefill,9360,0x7ff9dbe223d4,0.015625,unresolved
+1.307128099957481,prefill,29760,0x7ff9dbe223d4,0.03125,unresolved
+1.3072148999781348,prefill,30744,0x7ff7150d5490,0.015625,ggml_vec_dot_f32
+1.3074182999553159,prefill,18864,0x7ff7150a92aa,0.03125,ggml_compute_forward_mul_mat_one_chunk
+1.3075327999540605,prefill,22776,0x7ff7150d5490,0.03125,ggml_vec_dot_f32
+1.30759909999324,prefill,16504,0x7ff7150d5484,0.046875,ggml_vec_dot_f32
+1.4014783999882638,prefill,3076,0x7ff715135c5d,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.4015543999848887,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.4016170999966562,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.4016800999525003,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.4017512999707833,prefill,356,0x7ff715135f39,0.09375,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.401818199956324,prefill,9360,0x7ff715135c30,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.401890099979937,prefill,29760,0x7ff715135dd4,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.4019625999499112,prefill,30744,0x7ff9dbe223d4,0.046875,unresolved
+1.4020564999664202,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+1.4021455000038259,prefill,22776,0x7ff715135de6,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.4022583999903873,prefill,16504,0x7ff715135dd9,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.5283959999796934,prefill,3076,0x7ff9dbe223d4,0.0625,unresolved
+1.5299169999780133,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.537597199960146,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.5427500999649055,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.5428993999958038,prefill,356,0x7ff715135d56,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.5429826999898069,prefill,9360,0x7ff715135c35,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.5430532000027597,prefill,29760,0x7ff715135d10,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.5431308999541216,prefill,30744,0x7ff715135d39,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.543198700004723,prefill,18864,0x7ff9dbe223d4,0.0625,unresolved
+1.543265699991025,prefill,22776,0x7ff9dbe223d4,0.0625,unresolved
+1.5433234999654815,prefill,16504,0x7ff9dbe223d4,0.046875,unresolved
+1.6212994999950752,prefill,3076,0x7ff7150d53f7,0.0625,ggml_vec_dot_f32
+1.6213965999777429,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.6216035999823362,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.6223590999725275,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.622461499995552,prefill,356,0x7ff9dbd90fd4,0.078125,unresolved
+1.6225351999746636,prefill,9360,0x7ff7151442d5,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.6226069999975152,prefill,29760,0x7ff71514431c,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.622668199997861,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+1.6227809999836609,prefill,18864,0x7ff715144324,0.046875,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.6228363999980502,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+1.62290859996574,prefill,16504,0x7ff7151442de,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.7173343999893405,prefill,3076,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7174929999746382,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.7175858999835327,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.7176570000010543,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.7177395999897271,prefill,356,0x7ff9dbe223d4,0.09375,unresolved
+1.7178493999526836,prefill,9360,0x7ff715135ad9,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7190217999741435,prefill,29760,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7191332999500446,prefill,30744,0x7ff715135c5d,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7192002999945544,prefill,18864,0x7ff715135bea,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7192592999781482,prefill,22776,0x7ff715135e9f,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.7193471999489702,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+1.803883799992036,prefill,3076,0x7ff7151442fe,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8039812999777496,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.8040502999792807,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.8041185999754816,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.8041922999545932,prefill,356,0x7ff71514431c,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8042639999766834,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+1.8043291999492794,prefill,29760,0x7ff715144318,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8043927999679,prefill,30744,0x7ff7151442fe,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.80446379998466,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+1.8045349000021815,prefill,22776,0x7ff7151442fe,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8046075999736786,prefill,16504,0x7ff715144310,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8837330999667756,prefill,3076,0x7ff7150d53d5,0.046875,ggml_vec_dot_f32
+1.8839533999562263,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.8840268999920227,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.8840838999603875,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.8841587999486364,prefill,356,0x7ff7151240a2,0.078125,ggml_compute_forward_soft_max_f32
+1.884267599962186,prefill,9360,0x7ff715123e26,0.0625,ggml_compute_forward_soft_max_f32
+1.884324899991043,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+1.8844186999485828,prefill,30744,0x7ff7151442f4,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+1.8845226999837905,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+1.8845912999822758,prefill,22776,0x7ff9dbe223d4,0.046875,unresolved
+1.884673499967903,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+1.9654887999640778,prefill,3076,0x7ff715135ccc,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.9655534999910742,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+1.9656035999651067,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+1.9656516999821179,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+1.965702599962242,prefill,356,0x7ff715135d01,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.9657639999641106,prefill,9360,0x7ff715135bd6,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.9658141999971122,prefill,29760,0x7ff9dbe223d4,0.0625,unresolved
+1.9658793999697082,prefill,30744,0x7ff715135c35,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+1.9659470999613404,prefill,18864,0x7ff9dbe223d4,0.0625,unresolved
+1.9660672000027262,prefill,22776,0x7ff7150d5cba,0.078125,ggml_vec_swiglu_f32
+1.9661428999970667,prefill,16504,0x7ff9dbe223d4,0.0625,unresolved
+2.0526508999755606,prefill,3076,0x7ff9dbe223d4,0.078125,unresolved
+2.0527434999821708,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.052943199989386,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.0530384999583475,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.0531140999519266,prefill,356,0x7ff9dbe223d4,0.09375,unresolved
+2.0532500999979675,prefill,9360,0x7ff715135dee,0.09375,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.0533181999926455,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+2.05339209997328,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+2.053461499977857,prefill,18864,0x7ff9dbd90fd4,0.078125,unresolved
+2.0535250999964774,prefill,22776,0x7ff9c4a72058,0.0625,unresolved
+2.0536175000015646,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+2.135707799985539,prefill,3076,0x7ff715135c97,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.136019799974747,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.136186799965799,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.1362594999955036,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.1363336999784224,prefill,356,0x7ff9dbe223d4,0.0625,unresolved
+2.1364156999625266,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+2.1364903999492526,prefill,29760,0x7ff9dbe223d4,0.0625,unresolved
+2.136555799981579,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+2.13661389995832,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+2.1366888000047766,prefill,22776,0x7ff9dbe223d4,0.046875,unresolved
+2.136768599972129,prefill,16504,0x7ff715135b54,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.2329226000001654,prefill,3076,0x7ff715123e05,0.0625,ggml_compute_forward_soft_max_f32
+2.2330263999756426,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.233163999975659,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.2332255999790505,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.233381300000474,prefill,356,0x7ff7151442de,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.233452199958265,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+2.233529799967073,prefill,29760,0x7ff715144324,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.233592599979602,prefill,30744,0x7ff71514431c,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.23365259997081,prefill,18864,0x7ff9dbe223d4,0.046875,unresolved
+2.2337659999611787,prefill,22776,0x7ff9dbe223d4,0.09375,unresolved
+2.233834599959664,prefill,16504,0x7ff9dbe223d4,0.0625,unresolved
+2.321127399976831,prefill,3076,0x7ff715123e65,0.0625,ggml_compute_forward_soft_max_f32
+2.321252800000366,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.321333499974571,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.321399999957066,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.3214812999940477,prefill,356,0x7ff9dbe223d4,0.0625,unresolved
+2.3215887999976985,prefill,9360,0x7ff7151442d5,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.321662699978333,prefill,29760,0x7ff715144310,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.3217283999547362,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+2.321811599947978,prefill,18864,0x7ff71514431c,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.321876199974213,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+2.3219412000034936,prefill,16504,0x7ff7151442de,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.4080912999925204,prefill,3076,0x7ff715135db1,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.408199700003024,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.4082743999897502,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.4083418999798596,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.4084376999526285,prefill,356,0x7ff715135d39,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.408502599981148,prefill,9360,0x7ff715135cf9,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.4085602999548428,prefill,29760,0x7ff715135bf2,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.4086329999845475,prefill,30744,0x7ff715135bea,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.4086901999544352,prefill,18864,0x7ff715135de6,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.408759799960535,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+2.4088158999802545,prefill,16504,0x7ff9dbe223d4,0.078125,unresolved
+2.4913437999784946,prefill,3076,0x7ff7150d5a16,0.078125,ggml_vec_soft_max_f32
+2.4914479999570176,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.491560099995695,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.4916266999789514,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.4916883999831043,prefill,356,0x7ff9dbe223d4,0.09375,unresolved
+2.4917516999994405,prefill,9360,0x7ff7151442f4,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.491854899970349,prefill,29760,0x7ff715144324,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.4919126000022516,prefill,30744,0x7ff715144324,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.491971699986607,prefill,18864,0x7ff9dbe223d4,0.09375,unresolved
+2.4920312999747694,prefill,22776,0x7ff7151442f8,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.492103099997621,prefill,16504,0x7ff7151446e8,0.09375,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.576445699960459,prefill,3076,0x7ff71514433e,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.5765572999953292,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.5766399999847636,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.5767097999923863,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.5767772999824956,prefill,356,0x7ff715144342,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.576857299951371,prefill,9360,0x7ff715144324,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.5769285999704152,prefill,29760,0x7ff9dbe223d4,0.046875,unresolved
+2.5770105999545194,prefill,30744,0x7ff715144307,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.5770874999579974,prefill,18864,0x7ff715144324,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.5771709999535233,prefill,22776,0x7ff9dbe223d4,0.046875,unresolved
+2.577238700003363,prefill,16504,0x7ff9c4a728bb,0.0625,unresolved
+2.657214999955613,prefill,3076,0x7ff9dbe223d4,0.078125,unresolved
+2.6573668999481015,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.657473500003107,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.657543999957852,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.657606099965051,prefill,356,0x7ff9702c43bf,0.078125,unresolved
+2.6576934999902733,prefill,9360,0x7ff7151442fe,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.65778379997937,prefill,29760,0x7ff715144310,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.6578867999487557,prefill,30744,0x7ff7151442f0,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.65795739996247,prefill,18864,0x7ff715144310,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.6580203999765217,prefill,22776,0x7ff9dbe223d4,0.0625,unresolved
+2.6580992999952286,prefill,16504,0x7ff7151442d5,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.7361185999470763,prefill,3076,0x7ff715123e05,0.078125,ggml_compute_forward_soft_max_f32
+2.73625549999997,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.7363423999631777,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.7364291999838315,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.736514199990779,prefill,356,0x7ff7151442de,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.7365925000049174,prefill,9360,0x7ff715144318,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.736666399985552,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+2.736730499949772,prefill,30744,0x7ff7151442d9,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.7368068999494426,prefill,18864,0x7ff715144310,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.736870499968063,prefill,22776,0x7ff9dbe223d4,0.0625,unresolved
+2.736940799979493,prefill,16504,0x7ff7151442d9,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>"
+2.8126492999726906,prefill,3076,0x7ff7150d544b,0.078125,ggml_vec_dot_f32
+2.812748499971349,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.8128270999877714,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.8129262999864295,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.813077799975872,prefill,356,0x7ff7150d5476,0.078125,ggml_vec_dot_f32
+2.813163799990434,prefill,9360,0x7ff7150d53d5,0.078125,ggml_vec_dot_f32
+2.813218900002539,prefill,29760,0x7ff7150d5490,0.078125,ggml_vec_dot_f32
+2.8132702999864705,prefill,30744,0x7ff7150d5465,0.078125,ggml_vec_dot_f32
+2.8133215999696404,prefill,18864,0x7ff7150d5488,0.078125,ggml_vec_dot_f32
+2.8133744999649934,prefill,22776,0x7ff7150a92e8,0.078125,ggml_compute_forward_mul_mat_one_chunk
+2.8134449999779463,prefill,16504,0x7ff7150d5484,0.078125,ggml_vec_dot_f32
+2.8957588999764994,prefill,3076,0x7ff715151e8b,0.078125,ggml_gemm_q4_K_8x8_q8_K
+2.895834199967794,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.895897899987176,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.8959470999543555,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.896014700003434,prefill,356,0x7ff9dbe223d4,0.078125,unresolved
+2.8960990999476053,prefill,9360,0x7ff9dbe223d4,0.078125,unresolved
+2.8961769999586977,prefill,29760,0x7ff9dbe223d4,0.078125,unresolved
+2.896247599972412,prefill,30744,0x7ff9dbe223d4,0.09375,unresolved
+2.8963069999590516,prefill,18864,0x7ff715135a57,0.09375,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.896390799956862,prefill,22776,0x7ff715135cd4,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.8964532999671064,prefill,16504,0x7ff715135dde,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.9830910000018775,prefill,3076,0x7ff7150d3dfc,0.078125,ggml_vec_dot_q6_K_q8_K
+2.9834740999503992,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+2.983618999947794,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+2.9842855999595486,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+2.9844457999570295,prefill,356,0x7ff7150d4925,0.078125,quantize_row_q8_0
+2.9845335999852978,prefill,9360,0x7ff9dbe223d4,0.078125,unresolved
+2.984631299972534,prefill,29760,0x7ff715135d10,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.9847155999741517,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+2.9848001999780536,prefill,18864,0x7ff9dbcf2efc,0.0625,unresolved
+2.984885599988047,prefill,22776,0x7ff715135e2b,0.0625,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+2.98500879999483,prefill,16504,0x7ff715135e1a,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.070409399981145,prefill,3076,0x7ff9dbe223d4,0.09375,unresolved
+3.0707803999539465,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+3.071890599967446,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+3.0723291999893263,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+3.0725279999896884,prefill,356,0x7ff715135c9f,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.072617999976501,prefill,9360,0x7ff715135c67,0.09375,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.0727025999804027,prefill,29760,0x7ff715135a1e,0.09375,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.072777599969413,prefill,30744,0x7ff9dbe223d4,0.078125,unresolved
+3.0728409999865107,prefill,18864,0x7ff9dbe223d4,0.078125,unresolved
+3.072930499969516,prefill,22776,0x7ff715135c35,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.0736002999474294,prefill,16504,0x7ff715135d01,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.1532238999498077,prefill,3076,0x7ff9dbe223d4,0.078125,unresolved
+3.1538828999619,prefill,31380,0x7ff9dbe25a24,0.0,unresolved
+3.1539943999960087,prefill,29288,0x7ff9dbe25a24,0.0,unresolved
+3.1540540999849327,prefill,8548,0x7ff9dbe25a24,0.0,unresolved
+3.1541049999650568,prefill,356,0x7ff715135de6,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.1541582999634556,prefill,9360,0x7ff9dbe223d4,0.0625,unresolved
+3.154206899984274,prefill,29760,0x7ff715135b63,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.1542860999470577,prefill,30744,0x7ff9dbe223d4,0.0625,unresolved
+3.1544318999513052,prefill,18864,0x7ff9dbe223d4,0.046875,unresolved
+3.1544802999706008,prefill,22776,0x7ff9dbe223d4,0.078125,unresolved
+3.1545736999833025,prefill,16504,0x7ff7150d543a,0.046875,ggml_vec_dot_f32
+3.237429399974644,decode,3076,0x7ff714efc59b,0.078125,inference_engine::llm::Context::decode_lockstep
+3.237494000000879,decode,31380,0x7ff9dbe25a24,0.0,unresolved
+3.237550099962391,decode,29288,0x7ff9dbe25a24,0.0,unresolved
+3.237604299967643,decode,8548,0x7ff9dbe25a24,0.0,unresolved
+3.237662100000307,decode,356,0x7ff9dbe223d4,0.0625,unresolved
+3.2377286999835633,decode,9360,0x7ff9dbe223d4,0.0625,unresolved
+3.237794499960728,decode,29760,0x7ff9dbd90fbd,0.046875,unresolved
+3.2378648999729194,decode,30744,0x7ff9dbe223d4,0.046875,unresolved
+3.237928999995347,decode,18864,0x7ff9dbe223d4,0.0625,unresolved
+3.237977599957958,decode,22776,0x7ff9dbe223d4,0.0625,unresolved
+3.2380244999658316,decode,16504,0x7ff715135c30,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.3117622999707237,decode,3076,0x7ff9dbe223d4,0.078125,unresolved
+3.3118645999929868,decode,31380,0x7ff9dbe25a24,0.0,unresolved
+3.3119180999929085,decode,29288,0x7ff9dbe25a24,0.0,unresolved
+3.3119680999661796,decode,8548,0x7ff9dbe25a24,0.0,unresolved
+3.3120211999630556,decode,356,0x7ff715135d49,0.078125,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>"
+3.3120804999489337,decode,9360,0x7ff9dbe223d4,0.078125,unresolved
+3.312138999986928,decode,29760,0x7ff7150aa39c,0.0625,ggml_graph_compute_thread
+3.3122009999933653,decode,30744,0x7ff7150d543a,0.046875,ggml_vec_dot_f32
+3.3122719999519177,decode,18864,0x7ff7150d5493,0.078125,ggml_vec_dot_f32
+3.3123287999769673,decode,22776,0x7ff9dbd90fd4,0.078125,unresolved
+3.312401100003626,decode,16504,0x7ff9dbe223d4,0.0625,unresolved
+3.3875402999692596,decode,3076,0x7ff7150d3ddd,0.0625,ggml_vec_dot_q6_K_q8_K
+3.3876114999875426,decode,31380,0x7ff9dbe25a24,0.0,unresolved
+3.3876949999830686,decode,29288,0x7ff9dbe25a24,0.0,unresolved
+3.387769099965226,decode,8548,0x7ff9dbe25a24,0.0,unresolved
+3.3878274000016972,decode,356,0x7ff715140334,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>"
+3.387879099987913,decode,9360,0x7ff9dbe223d4,0.078125,unresolved
+3.387941499997396,decode,29760,0x7ff715140334,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>"
+3.388010299997404,decode,30744,0x7ff715140315,0.0625,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>"
+3.38806529995054,decode,18864,0x7ff9dbe223d4,0.0625,unresolved
+3.388113799970597,decode,22776,0x7ff71514034b,0.078125,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>"
+3.388157399953343,decode,16504,0x7ff9c4a727ad,0.078125,unresolved

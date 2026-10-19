@@ -1,0 +1,25 @@
+phase,symbol,samples,active_samples,cpu_delta_s,estimated_cpu_share,arm,run
+decode,unresolved,22,13,0.859375,0.5288461538461539,tree,profile-pilot
+decode,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,2,2>",4,4,0.28125,0.173076923076923,tree,profile-pilot
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",2,2,0.15625,0.0961538461538461,tree,profile-pilot
+decode,ggml_vec_dot_f32,2,2,0.125,0.0769230769230769,tree,profile-pilot
+decode,inference_engine::llm::Context::decode_lockstep,1,1,0.078125,0.048076923076923,tree,profile-pilot
+decode,ggml_graph_compute_thread,1,1,0.0625,0.0384615384615384,tree,profile-pilot
+decode,ggml_vec_dot_q6_K_q8_K,1,1,0.0625,0.0384615384615384,tree,profile-pilot
+load,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",1,1,0.0625,0.4,tree,profile-pilot
+load,unresolved,13,1,0.046875,0.3,tree,profile-pilot
+load,llama_decode_text,1,1,0.046875,0.3,tree,profile-pilot
+load,replace_all,1,0,0.0,0.0,tree,profile-pilot
+prefill,unresolved,218,116,7.796875,0.4283261802575107,tree,profile-pilot
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",69,66,4.96875,0.2729613733905579,tree,profile-pilot
+prefill,"`anonymous namespace'::tinyBLAS<8,__m256,__m256,float,float,float>::gemm<4,3,2>",40,40,3.109375,0.1708154506437768,tree,profile-pilot
+prefill,ggml_vec_dot_f32,14,14,0.875,0.048068669527897,tree,profile-pilot
+prefill,ggml_compute_forward_soft_max_f32,6,6,0.40625,0.0223175965665236,tree,profile-pilot
+prefill,quantize_row_q8_0,4,3,0.234375,0.0128755364806866,tree,profile-pilot
+prefill,ggml_vec_swiglu_f32,3,3,0.203125,0.0111587982832618,tree,profile-pilot
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",2,2,0.140625,0.007725321888412,tree,profile-pilot
+prefill,ggml_vec_soft_max_f32,2,2,0.140625,0.007725321888412,tree,profile-pilot
+prefill,ggml_compute_forward_mul_mat_one_chunk,2,2,0.109375,0.0060085836909871,tree,profile-pilot
+prefill,ggml_gemm_q4_K_8x8_q8_K,1,1,0.078125,0.0042918454935622,tree,profile-pilot
+prefill,ggml_vec_dot_q6_K_q8_K,1,1,0.078125,0.0042918454935622,tree,profile-pilot
+prefill,ggml_quantize_mat_q8_K_4x8,1,1,0.0625,0.0034334763948497,tree,profile-pilot

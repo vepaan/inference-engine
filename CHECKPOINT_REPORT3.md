@@ -1,3 +1,5 @@
+> Current stopping point: [report-ready technical handoff](results/report3/final/REPORT_READY.md). Read this before the older checkpoint material below.
+
 > Continuation update: read [results/report3/BENCHMARK_NOTES.md](results/report3/BENCHMARK_NOTES.md)
 > for the current handoff. A sibling-loss bug was found and fixed; 18 tree cases pass.
 > Small strict verification passes, but the 1,024-token prefix fails independent-context

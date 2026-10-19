@@ -93,6 +93,24 @@ if(BUILD_TESTING)
 	endif()
 endif()
 
+add_executable(ie_bandwidth_bench
+	apps/ie_bandwidth_bench.cpp
+)
+target_compile_features(ie_bandwidth_bench PRIVATE cxx_std_20)
+if(MSVC)
+	target_compile_options(ie_bandwidth_bench PRIVATE /W4 /WX /permissive-)
+else()
+	target_compile_options(ie_bandwidth_bench PRIVATE
+		-Wall
+		-Wextra
+		-Wpedantic
+		-Wconversion
+		-Wsign-conversion
+		-Wshadow
+		-Werror
+	)
+endif()
+
 if(IE_WITH_LLAMA)
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 	set(GGML_CUDA OFF CACHE BOOL "" FORCE)

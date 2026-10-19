@@ -1,0 +1,51 @@
+{
+    "identity_json":  "{\"git_commit\":\"1a8b2e68e9083fdb14c0bbdcbb7075703862525e\",\"llama_cpp_commit\":\"434ddbbc0e30522e897670681e503b797c12b7c1\",\"source_sha256\":{\"apps/ie_bandwidth_bench.cpp\":\"EDD4EDC7549E36E725036B1E791508262BAEF6F36018B2F9D433F33671442ED8\",\"apps/ie_smoke.cpp\":\"6655DD1E2F006E768CA94D855629044BB412578FE8B2DFBBA3362A5A3B894C30\",\"apps/ie_tree_bench.cpp\":\"3D3E6921CFE64AEBBCE4AB2511FBBEC2B9D3C2C628390490D42D7373830176C3\",\"CMakeLists.txt\":\"7E80C3E4688A289B590EC835284C50A361C7F8775D50EF36E11FF66963BA8129\",\"core/kv_backend.hpp\":\"2E89B63AF2CA89C26B757A432618A5C837064478AB5A6C487FFC84177118DA41\",\"core/kv_tree.cpp\":\"52E811BEB193AA3C40FC9F87C7E64E9F074A71A05DE8CBC20F6F306CC631E934\",\"core/kv_tree.hpp\":\"9F024646DA2BA72AF0D707640A1178265BD3A58BA67367C335117603066171A0\",\"scripts/analyze_report3.py\":\"C673AF3F2835F1C7D781085DD887C4A5BB1F2BF1C0FB74CAEFCE146EF6D4E709\",\"scripts/run_benchmarks_report3.ps1\":\"D95775ED29CA2BE51E2FD704F5A4F3544E6B918BFB29129A41E498C02705132D\",\"scripts/run_tree_bench.ps1\":\"2F06281AF424ECBA582B729254E2B8E65B1E89EFB0828BD1E35AB1DAF2A8C805\",\"src/llm/llama_backend.cpp\":\"6658B3C489255BA0F0348A49A5E966A2491352AE2F87885C8F701CFB8BF37ACC\",\"src/llm/llama_backend.hpp\":\"61D9FE01DF2A3E96D3582EB35B9BE64F92FD8908B16D0A9A7685AD41535D9878\",\"src/llm/llama_wrap.cpp\":\"DAD6BC1150CE29C79526036F855248DD804DBB5D03B60E8440F9BE09FA25CD36\",\"src/llm/llama_wrap.hpp\":\"CB0568884D02B87219E460BDD305DCEC66BE186E50AA9AC6196AE784C99110EC\",\"tests/check_golden.ps1\":\"37F5EF81F2165E15B7E3E2F8A3AB1EF78E289337311AE1D2A4556175618AA04D\",\"tests/kv_tree_tests.cpp\":\"A94B69999EDED43BA4D3DFACE35AC42A65AEB0AF5DECCFFB621944A6B50004BD\",\"tests/minitest.hpp\":\"864D3BE0A8E557C61BD6AEE6C831738AD1A4286C5E7F00EEC3FBC414D1E95754\"},\"executable_sha256\":\"2CE4A6538AE1251182C45BA296BE243A2BC4B4C1C3C33C793561A9085AE757C2\",\"bandwidth_executable_sha256\":\"0482E4927DC1A56BC698586E640358F90AFDFED48AC36BB9202B037BFB43FEC4\",\"model_sha256\":\"2E8040CEAE7815ABE0DCB3540B9995EAA1FA0D2CA9E797D0A635AE4433C68C2D\",\"model_path\":\"C:\\\\Users\\\\ASUS\\\\Documents\\\\GitHub\\\\inference-engine\\\\models\\\\SmolLM2-135M-Instruct-Q4_K_M.gguf\",\"threads\":2,\"warmup_processes_per_trial\":1,\"flash_attn\":1,\"n_batch\":128,\"sampling\":\"greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping\",\"kv_type\":\"f16 K and V; CPU only\"}",
+    "identity":  {
+                     "git_commit":  "1a8b2e68e9083fdb14c0bbdcbb7075703862525e",
+                     "llama_cpp_commit":  "434ddbbc0e30522e897670681e503b797c12b7c1",
+                     "source_sha256":  {
+                                           "apps/ie_bandwidth_bench.cpp":  "EDD4EDC7549E36E725036B1E791508262BAEF6F36018B2F9D433F33671442ED8",
+                                           "apps/ie_smoke.cpp":  "6655DD1E2F006E768CA94D855629044BB412578FE8B2DFBBA3362A5A3B894C30",
+                                           "apps/ie_tree_bench.cpp":  "3D3E6921CFE64AEBBCE4AB2511FBBEC2B9D3C2C628390490D42D7373830176C3",
+                                           "CMakeLists.txt":  "7E80C3E4688A289B590EC835284C50A361C7F8775D50EF36E11FF66963BA8129",
+                                           "core/kv_backend.hpp":  "2E89B63AF2CA89C26B757A432618A5C837064478AB5A6C487FFC84177118DA41",
+                                           "core/kv_tree.cpp":  "52E811BEB193AA3C40FC9F87C7E64E9F074A71A05DE8CBC20F6F306CC631E934",
+                                           "core/kv_tree.hpp":  "9F024646DA2BA72AF0D707640A1178265BD3A58BA67367C335117603066171A0",
+                                           "scripts/analyze_report3.py":  "C673AF3F2835F1C7D781085DD887C4A5BB1F2BF1C0FB74CAEFCE146EF6D4E709",
+                                           "scripts/run_benchmarks_report3.ps1":  "D95775ED29CA2BE51E2FD704F5A4F3544E6B918BFB29129A41E498C02705132D",
+                                           "scripts/run_tree_bench.ps1":  "2F06281AF424ECBA582B729254E2B8E65B1E89EFB0828BD1E35AB1DAF2A8C805",
+                                           "src/llm/llama_backend.cpp":  "6658B3C489255BA0F0348A49A5E966A2491352AE2F87885C8F701CFB8BF37ACC",
+                                           "src/llm/llama_backend.hpp":  "61D9FE01DF2A3E96D3582EB35B9BE64F92FD8908B16D0A9A7685AD41535D9878",
+                                           "src/llm/llama_wrap.cpp":  "DAD6BC1150CE29C79526036F855248DD804DBB5D03B60E8440F9BE09FA25CD36",
+                                           "src/llm/llama_wrap.hpp":  "CB0568884D02B87219E460BDD305DCEC66BE186E50AA9AC6196AE784C99110EC",
+                                           "tests/check_golden.ps1":  "37F5EF81F2165E15B7E3E2F8A3AB1EF78E289337311AE1D2A4556175618AA04D",
+                                           "tests/kv_tree_tests.cpp":  "A94B69999EDED43BA4D3DFACE35AC42A65AEB0AF5DECCFFB621944A6B50004BD",
+                                           "tests/minitest.hpp":  "864D3BE0A8E557C61BD6AEE6C831738AD1A4286C5E7F00EEC3FBC414D1E95754"
+                                       },
+                     "executable_sha256":  "2CE4A6538AE1251182C45BA296BE243A2BC4B4C1C3C33C793561A9085AE757C2",
+                     "bandwidth_executable_sha256":  "0482E4927DC1A56BC698586E640358F90AFDFED48AC36BB9202B037BFB43FEC4",
+                     "model_sha256":  "2E8040CEAE7815ABE0DCB3540B9995EAA1FA0D2CA9E797D0A635AE4433C68C2D",
+                     "model_path":  "C:\\Users\\ASUS\\Documents\\GitHub\\inference-engine\\models\\SmolLM2-135M-Instruct-Q4_K_M.gguf",
+                     "threads":  2,
+                     "warmup_processes_per_trial":  1,
+                     "flash_attn":  1,
+                     "n_batch":  128,
+                     "sampling":  "greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping",
+                     "kv_type":  "f16 K and V; CPU only"
+                 },
+    "timestamp":  "2026-10-18T22:34:02.9771800-05:00",
+    "cpu":  "AMD Ryzen 5 5500U with Radeon Graphics",
+    "physical_cores":  null,
+    "logical_cores":  12,
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "memory_bytes":  12240412672,
+    "build_type":  "Release",
+    "cmake_cache":  [
+                        "CMAKE_BUILD_TYPE:UNINITIALIZED=Release",
+                        "IE_WITH_LLAMA:BOOL=ON",
+                        "CMAKE_GENERATOR:INTERNAL=Visual Studio 17 2022",
+                        "CMAKE_GENERATOR_INSTANCE:INTERNAL=C:/Program Files/Microsoft Visual Studio/2022/Community",
+                        "CMAKE_GENERATOR_PLATFORM:INTERNAL=",
+                        "CMAKE_GENERATOR_TOOLSET:INTERNAL="
+                    ]
+}

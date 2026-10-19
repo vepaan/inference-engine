@@ -1,0 +1,89 @@
+{
+  "physical_cores": 6,
+  "logical_cores": 12,
+  "memory_bytes": 12240412672,
+  "caches": [
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 3,
+      "size_bytes": 4194304
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 1,
+      "size_bytes": 32768
+    },
+    {
+      "level": 2,
+      "size_bytes": 524288
+    },
+    {
+      "level": 3,
+      "size_bytes": 4194304
+    }
+  ],
+  "compiler": "MSVC 19.37.32822.0",
+  "method": "Windows native processor/cache/memory APIs via ctypes and psutil; compiler CMake detection file"
+}

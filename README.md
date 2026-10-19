@@ -10,7 +10,7 @@ A C++20 prototype for measuring shared-prefix KV-cache behavior in agentic tree 
 - The optional llama.cpp wrapper supports CPU prefill, greedy lockstep decode, sequence copy/remove, and model KV metadata.
 - `ie_tree_bench` runs one fresh-process real-model arm; `scripts/run_tree_bench.ps1` aggregates the sweep.
 
-The current tree uses a mutex for structural operations. Epoch reclamation, real-model measurements, and profiling extras remain pending.
+The current tree uses a mutex for structural operations. Progress Report 3 adds correctness diagnostics, resumable real-model trials, thread/attention controls, and a CPU read-bandwidth calibration. See [the technical handoff](results/report3/BENCHMARK_NOTES.md) for measured results and the unresolved independent-context verification failure. Epoch reclamation remains outside this work.
 
 ## Requirements
 
@@ -100,3 +100,18 @@ The memory comparison is:
 M_naive  = b * (P + S) * K
 M_shared = (P + b * S) * K
 ```
+
+## Progress Report 3
+
+```powershell
+# Short resumable primary subset (two measured trials per arm):
+.\scripts\run_benchmarks_report3.ps1 -OutputDir results/report3/reproduction -Experiment Matrix -Branches 2 -Prefixes 1024 -Trials 2 -MaxTrials 4
+python scripts/analyze_report3.py results/report3/reproduction
+```
+
+Use a new `-OutputDir` if the runner reports different source/binary/model hashes.
+Historical measurements are preserved. The current campaign is in
+`results/report3/validated/`; despite the directory name, strict separate-context
+verification fails at a 1,024-token prefix. Batched naive/tree parity passes there.
+Read [methodology, limitations, and exact reproduction commands](results/report3/BENCHMARK_NOTES.md)
+before interpreting performance or memory figures.

@@ -1,0 +1,8 @@
+{
+  "primary_matrix": "4 of 80 target trials measured; full matrix not complete",
+  "thread_scaling": "1,2,4,8 threads measured; one trial per arm except two at 2 threads",
+  "attention_latency_comparison": "skipped: disabled-mode batched naive/tree logit difference 1.183932 exceeds unchanged 1e-3 threshold",
+  "bandwidth": "five passes at each of 1,2,4,8 threads; 256 MiB buffer; one warm-up per count",
+  "second_model": "available, not executed",
+  "strict_independent_correctness": "passes P=128,S=64,b=2; fails P=1024,S=64,b=2 for enabled and disabled attention"
+}

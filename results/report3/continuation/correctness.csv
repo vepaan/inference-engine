@@ -1,0 +1,2 @@
+model,arm,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status
+SmolLM2-135M-Instruct-Q4_K_M.gguf,tree,2,1024,64,2,1,0.265625,21.435754,3.109983,FAILED

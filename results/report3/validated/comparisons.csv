@@ -1,0 +1,5 @@
+model,b,P,S,threads,flash_attn,prefill_ms_median_naive,prefill_ms_median_tree,step_us_p50_median_naive,step_us_p50_median_tree,kv_bytes_median_naive,kv_bytes_median_tree
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,200,1,1,21196.4002,11561.2234,48482.0,59139.9,58982400.0,35389440.0
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,200,2,1,10054.5957,7168.9864,28984.65,28464.7,58982400.0,35389440.0
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,200,4,1,5651.0606,4224.5394,25622.5,60786.1,58982400.0,35389440.0
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,200,8,1,4833.1971,2297.2475,18450.4,17281.8,58982400.0,35389440.0

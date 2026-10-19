@@ -1,0 +1,42 @@
+=== Memory Bandwidth Calibration Benchmark ===
+Buffer size: 256 MiB (268435456 bytes)
+Threads: 1
+Warm-up passes: 1
+Measured trials: 5
+
+--- Benchmarking with 1 thread(s) ---
+  Trial 1: 14.98 GB/s
+  Trial 2: 14.00 GB/s
+  Trial 3: 14.78 GB/s
+  Trial 4: 14.66 GB/s
+  Trial 5: 15.48 GB/s
+  Median: 14.78 GB/s (Min: 14.00, Max: 15.48)
+
+CSV,256,1,14.7819,14.0036,15.4753
+--- Benchmarking with 2 thread(s) ---
+  Trial 1: 25.69 GB/s
+  Trial 2: 25.25 GB/s
+  Trial 3: 25.02 GB/s
+  Trial 4: 23.61 GB/s
+  Trial 5: 18.71 GB/s
+  Median: 25.02 GB/s (Min: 18.71, Max: 25.69)
+
+CSV,256,2,25.0166,18.7131,25.6915
+--- Benchmarking with 4 thread(s) ---
+  Trial 1: 25.73 GB/s
+  Trial 2: 25.61 GB/s
+  Trial 3: 23.64 GB/s
+  Trial 4: 27.93 GB/s
+  Trial 5: 25.17 GB/s
+  Median: 25.61 GB/s (Min: 23.64, Max: 27.93)
+
+CSV,256,4,25.6143,23.6374,27.9326
+--- Benchmarking with 8 thread(s) ---
+  Trial 1: 25.26 GB/s
+  Trial 2: 23.10 GB/s
+  Trial 3: 25.84 GB/s
+  Trial 4: 22.99 GB/s
+  Trial 5: 25.13 GB/s
+  Median: 25.13 GB/s (Min: 22.99, Max: 25.84)
+
+CSV,256,8,25.1316,22.9908,25.8387

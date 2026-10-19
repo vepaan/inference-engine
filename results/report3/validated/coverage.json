@@ -1,0 +1,183 @@
+{
+  "primary_target_trials": 80,
+  "primary_measured_trials": 4,
+  "primary_remaining_trials": 76,
+  "configurations": [
+    {
+      "arm": "naive",
+      "b": 2,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 2,
+      "target": 5,
+      "remaining": 3
+    },
+    {
+      "arm": "naive",
+      "b": 2,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 4,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 4,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 8,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 8,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 16,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "naive",
+      "b": 16,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 2,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 2,
+      "target": 5,
+      "remaining": 3
+    },
+    {
+      "arm": "tree",
+      "b": 2,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 4,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 4,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 8,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 8,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 16,
+      "P": 1024,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    },
+    {
+      "arm": "tree",
+      "b": 16,
+      "P": 2048,
+      "S": 200,
+      "threads": 2,
+      "flash_attn": 1,
+      "measured": 0,
+      "target": 5,
+      "remaining": 5
+    }
+  ]
+}

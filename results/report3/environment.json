@@ -1,0 +1,46 @@
+{
+  "cpu": "AMD Ryzen 5 5500U with Radeon Graphics",
+  "physical_cores": 6,
+  "logical_cores": 12,
+  "memory_gb": 11.33,
+  "os": "Microsoft Windows 11 Home",
+  "compiler": "MSVC 19.37.32822.0 / Visual Studio 2022 (C++20)",
+  "build_type": "Release (/W4 /WX /permissive-)",
+  "llama_cpp_commit": "434ddbbc0e30522e897670681e503b797c12b7c1",
+  "llama_cpp_version": "v0.4.0-75-g434ddbbc0",
+  "models": [
+    {
+      "name": "SmolLM2-135M-Instruct-Q4_K_M.gguf",
+      "path": "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+      "file_bytes": 105454432,
+      "layers": 30,
+      "heads": 9,
+      "kv_heads": 3,
+      "embedding": 576,
+      "head_dim": 64,
+      "vocab": 49152,
+      "kappa_bytes": 23040
+    },
+    {
+      "name": "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+      "path": "models/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+      "file_bytes": 807694464,
+      "layers": 16,
+      "heads": 32,
+      "kv_heads": 8,
+      "embedding": 2048,
+      "head_dim": 64,
+      "vocab": 128256,
+      "kappa_bytes": 32768
+    }
+  ],
+  "calibration": {
+    "measured_read_bandwidth_gb_s": {
+      "1_thread": 13.25,
+      "2_threads": 23.25,
+      "4_threads": 23.14,
+      "8_threads": 22.42
+    }
+  }
+}
+

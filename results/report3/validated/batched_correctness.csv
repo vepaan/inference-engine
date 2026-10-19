@@ -1,0 +1,4 @@
+model,b,P,S,threads,flash_attn,token_match_rate,max_abs_logit_diff,mean_abs_logit_diff,status
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,64,2,0,1.000000,1.183932,0.153552,FAILED
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,1024,64,2,1,1.000000,0.000000,0.000000,PASSED
+SmolLM2-135M-Instruct-Q4_K_M.gguf,2,128,64,2,1,1.000000,0.000000,0.000000,PASSED

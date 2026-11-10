@@ -1,0 +1,41 @@
+phase,symbol,samples,active_samples,cpu_delta_s,estimated_cpu_share
+decode,unresolved,2048,952,54.890625,0.8087016574585635
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",95,94,5.078125,0.0748158379373849
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",40,39,2.09375,0.030847145488029467
+decode,ggml_vec_dot_f16,37,35,1.78125,0.026243093922651933
+decode,ggml_vec_mad_f16,33,33,1.765625,0.026012891344383057
+decode,ggml_vec_dot_q6_K_q8_K,13,12,0.6875,0.010128913443830571
+decode,ggml_compute_forward_flash_attn_ext_f16_one_chunk,8,8,0.46875,0.006906077348066298
+decode,ggml_gemv_q4_K_8x8_q8_K,9,9,0.375,0.0055248618784530384
+decode,ggml_compute_forward_rms_norm_f32<1>,2,2,0.109375,0.0016114180478821363
+decode,rotate_pairs<float>,2,2,0.109375,0.0016114180478821363
+decode,inference_engine::llm::Context::decode_lockstep,2,2,0.09375,0.0013812154696132596
+decode,ggml_graph_compute_thread,1,1,0.0625,0.0009208103130755065
+decode,ggml_cpu_fp32_to_fp16,1,1,0.046875,0.0006906077348066298
+decode,ggml_compute_forward_swiglu_f32,1,1,0.046875,0.0006906077348066298
+decode,ggml_compute_forward,1,1,0.046875,0.0006906077348066298
+decode,ggml_compute_forward_mul_mat,1,1,0.046875,0.0006906077348066298
+decode,ggml_vec_scale_f16,1,1,0.046875,0.0006906077348066298
+decode,__security_check_cookie,1,1,0.046875,0.0006906077348066298
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::mnpack",1,1,0.046875,0.0006906077348066298
+decode,ggml_backend_cpu_get_extra_buffer_types,1,1,0.03125,0.00046040515653775324
+decode,ggml_cpu_extra_compute_forward,1,0,0.0,0.0
+load,unresolved,10,1,0.078125,0.7142857142857143
+load,llama_batch_allocr::init,1,1,0.03125,0.2857142857142857
+load,replace_all,1,0,0.0,0.0
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",125,123,7.578125,0.4532710280373832
+prefill,unresolved,174,69,4.5,0.2691588785046729
+prefill,ggml_vec_dot_q6_K_q8_K,16,16,1.0,0.059813084112149535
+prefill,simd_gemm,14,14,0.90625,0.05420560747663551
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",12,10,0.625,0.037383177570093455
+prefill,ggml_compute_forward_flash_attn_ext_tiled,8,8,0.546875,0.03271028037383177
+prefill,ggml_gemm_q4_K_8x8_q8_K,8,8,0.53125,0.03177570093457944
+prefill,quantize_row_q8_K_ref,4,4,0.28125,0.016822429906542057
+prefill,ggml_vec_soft_max_f32,4,4,0.234375,0.014018691588785047
+prefill,ggml_compute_forward_rms_norm_f32<1>,2,2,0.125,0.007476635514018692
+prefill,quantize_row_q8_0,2,2,0.09375,0.005607476635514018
+prefill,rotate_pairs<float>,1,1,0.0625,0.003738317757009346
+prefill,"apply_binary_op<&op_add,float,float,float>",1,1,0.0625,0.003738317757009346
+prefill,ggml_vec_swiglu_f32,1,1,0.0625,0.003738317757009346
+prefill,ggml_compute_forward_flash_attn_ext_f16_one_chunk,1,1,0.0625,0.003738317757009346
+prefill,ggml_compute_forward_mul_mat,1,1,0.046875,0.002803738317757009

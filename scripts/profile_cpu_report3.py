@@ -52,7 +52,9 @@ def main():
     dbg.SymFromAddr.argtypes=[wt.HANDLE,ct.c_ulonglong,ct.POINTER(ct.c_ulonglong),ct.POINTER(SymbolInfo)]; dbg.SymFromAddr.restype=wt.BOOL
     dbg.SymCleanup.argtypes=[wt.HANDLE]; dbg.SymCleanup.restype=wt.BOOL
     dbg.SymSetOptions.argtypes=[wt.DWORD]; dbg.SymSetOptions.restype=wt.DWORD
-    dbg.SymSetOptions(0x4|0x2|0x400)
+    # EXACT_SYMBOLS (0x400) also disables export fallback for Windows DLLs.
+    # Keep normal PDB matching; never enable LOAD_ANYTHING (0x40).
+    dbg.SymSetOptions(0x4|0x2|0x200|0x80000)
     phases=queue.SimpleQueue()
     stdout_file=(out/"stdout.log").open("w")
     stderr_file=(out/"stderr.log").open("w")
@@ -65,15 +67,30 @@ def main():
             if line.startswith("PROFILE_PHASE,"):
                 phases.put(line.strip().split(",",1)[1])
     reader=threading.Thread(target=read_stdout,daemon=True); reader.start()
-    symbols=bool(dbg.SymInitialize(handle,str(Path(cmd[0]).resolve().parent).encode(),True))
+    # Do not enumerate a child whose loader may not have initialized yet.
+    symbol_path=str(Path(cmd[0]).resolve().parent).encode()
+    symbols=bool(dbg.SymInitialize(handle,symbol_path,False))
     phase="load"; refreshed=False; samples=[]; timeline=[]; previous_threads={}; last_cpu=0.; last_wall=time.perf_counter(); start=last_wall
+    cache={}
+    def resolve(rip):
+        storage=ct.create_string_buffer(ct.sizeof(SymbolInfo)+1024)
+        info=ct.cast(storage,ct.POINTER(SymbolInfo))
+        info.contents.SizeOfStruct=ct.sizeof(SymbolInfo); info.contents.MaxNameLen=1024
+        displacement=ct.c_ulonglong()
+        if symbols and dbg.SymFromAddr(handle,rip,ct.byref(displacement),info):
+            name=ct.string_at(ct.addressof(storage)+SymbolInfo.Name.offset,info.contents.NameLen).decode(errors="replace")
+            if info.contents.Flags & 0x200:
+                return f"export::{name}+0x{displacement.value:x}"
+            return name
+        return "unresolved"
     failures=collections.Counter()
     try:
         while proc.poll() is None:
             tick=time.perf_counter()
             while not phases.empty(): phase=phases.get()
-            if phase=="prefill" and symbols and not refreshed:
-                dbg.SymRefreshModuleList(handle); refreshed=True
+            if phase in ("prefill", "fork", "decode") and symbols and not refreshed:
+                refreshed=bool(dbg.SymRefreshModuleList(handle))
+                if refreshed: cache={}
             try:
                 times=child.cpu_times(); cpu=times.user+times.system
                 wall=tick-last_wall
@@ -103,18 +120,16 @@ def main():
                     finally:
                         if suspended: kernel.ResumeThread(h)
                         kernel.CloseHandle(h)
+                # Resolve while modules are still loaded, after resuming every
+                # sampled thread. DbgHelp stays on this single sampler thread.
+                for rip in {r["rip"] for r in samples if r["rip"] not in cache}:
+                    cache[rip]=resolve(rip)
             except (psutil.NoSuchProcess,psutil.AccessDenied):
                 failures["process_query"]+=1
             time.sleep(max(0.,args.interval_ms/1000-(time.perf_counter()-tick)))
         code=proc.wait(); reader.join(timeout=5)
-        cache={}
         for rip in {r["rip"] for r in samples}:
-            storage=ct.create_string_buffer(ct.sizeof(SymbolInfo)+1024)
-            info=ct.cast(storage,ct.POINTER(SymbolInfo)); info.contents.SizeOfStruct=ct.sizeof(SymbolInfo); info.contents.MaxNameLen=1024
-            displacement=ct.c_ulonglong()
-            if symbols and dbg.SymFromAddr(handle,rip,ct.byref(displacement),info):
-                cache[rip]=ct.string_at(ct.addressof(storage)+SymbolInfo.Name.offset,info.contents.NameLen).decode(errors="replace")
-            else: cache[rip]="unresolved"
+            if rip not in cache: cache[rip]=resolve(rip)
         groups=collections.defaultdict(lambda:[0,0,0.])
         for row in samples:
             row["symbol"]=cache[row["rip"]]; row["rip"]=hex(row["rip"])
@@ -131,6 +146,9 @@ def main():
             method="Flat instruction pointers of this launched child's threads; CPU-time deltas weight approximate attribution; instrumentation perturbs execution; no stacks or hardware counters",
             executable_sha256=hashlib.sha256(Path(cmd[0]).read_bytes()).hexdigest(),
             profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            model_sha256=hashlib.sha256(Path(cmd[cmd.index("--model")+1]).read_bytes()).hexdigest() if "--model" in cmd else None,
+            symbol_resolution="live process; local PDBs plus labeled export fallback; unresolved addresses retained",
+            module_list_refreshed=refreshed,
             git_commit=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip())
         (out/"profile.json").write_text(json.dumps(metadata,indent=2))
         print(json.dumps(metadata,indent=2))

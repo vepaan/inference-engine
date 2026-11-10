@@ -1,3 +1,4 @@
 
 # Preserve captured experiment bytes, including source-snapshot hashes.
 /results/report3/** -text
+/results/wrapup/** -text

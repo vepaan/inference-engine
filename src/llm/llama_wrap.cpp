@@ -224,6 +224,10 @@ std::uint32_t Context::n_ctx() const noexcept { return llama_n_ctx(context_); }
 
 std::uint32_t Context::n_seq_max() const noexcept { return n_seq_max_; }
 
+llama_pos Context::seq_position_max(llama_seq_id seq) const {
+    return llama_memory_seq_pos_max(llama_get_memory(context_), seq);
+}
+
 DecodeStatus Context::decode(llama_batch batch) const {
     const int32_t result = llama_decode(context_, batch);
     if (result == 0) {

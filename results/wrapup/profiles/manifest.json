@@ -1,0 +1,37 @@
+{
+  "base_commit": "3dfab9c54c502400d61765ca3c3ab49c567d2804",
+  "dependency_commit": "434ddbbc0e30522e897670681e503b797c12b7c1",
+  "executable_sha256": "1345ce40e9dba705af5f888fc6184559c5c7756b18a4d64f77e4f7f2454391c3",
+  "models": {
+    "SmolLM2-135M-Instruct-Q4_K_M.gguf": "2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d",
+    "Llama-3.2-1B-Instruct-Q4_K_M.gguf": "6f85a640a97cf2bf5b8e764087b1e83da0fdb51d7c9fab7d0fece9385611df83"
+  },
+  "source_sha256": {
+    "CMakeLists.txt": "2baabc4a1eeb675f35604731aaf920447b98c9f6d7b33c7a73f132610f21d6ef",
+    "apps/ie_bandwidth_bench.cpp": "edd4edc7549e36e725036b1e791508262baef6f36018b2f9d433f33671442ed8",
+    "apps/ie_smoke.cpp": "6655dd1e2f006e768ca94d855629044bb412578fe8b2dfbba3362a5a3b894c30",
+    "apps/ie_tree_bench.cpp": "d2ef841b4ed6cb0b77ef34fdb049209017cbafbbb9efbaae706713f5206e35a8",
+    "bench/main_bench.cpp": "c75a7353a359b36c9fadeefdcecea06e301e27228585d08c1bec6b8283b7195b",
+    "bench/memory_mock.hpp": "fac73de9735fb7d1fa8565dc9166e0fd5187a56652a8896fb2d3e44566eef9de",
+    "core/kv_backend.hpp": "2e89b63af2ca89c26b757a432618a5c837064478ab5a6c487ffc84177118da41",
+    "core/kv_tree.cpp": "9f35eb3fbc29812e00fd637da0c924a474ca63bec93e8a4224c1c2a32b7c2ce3",
+    "core/kv_tree.hpp": "9f024646da2ba72af0d707640a1178265bd3a58ba67367c335117603066171a0",
+    "scripts/analyze_profiles_report3.py": "03bd4088e44f1689f67f246682d5e2f1faa653728e8601b3e24ea7dfd6288369",
+    "scripts/analyze_report3.py": "b924cb3c106c545f2b14c09d48936eec85dca9d54ff70c83e2092b490f65dd2e",
+    "scripts/audit_wrapup.py": "5d63dc5c3d5d0e4d719cdabe5c8d673c9b3f21c22595a45185b97ce2d2f817f7",
+    "scripts/profile_cpu_report3.py": "e2915dac9f7eccba2986a5eef208d58589614afcd2db466c23965c624618df10",
+    "scripts/run_benchmarks_report3.ps1": "465474ae5faddb7b3c1992aee3ba5f5aa88b6be940f506662d3fec3a20f37888",
+    "scripts/run_tree_bench.ps1": "2f06281af424ecba582b729254e2b8e65b1e89efb0828bd1e35ab1daf2a8c805",
+    "scripts/run_wrapup_validation.py": "f9ea14d66b415bce36a02b0d484146f92bf48bfa04551570bf6cd1231d221ada",
+    "src/llm/llama_backend.cpp": "6658b3c489255ba0f0348a49a5e966a2491352ae2f87885c8f701cfb8bf37acc",
+    "src/llm/llama_backend.hpp": "61d9fe01df2a3e96d3582eb35b9be64f92fd8908b16d0a9a7685ad41535d9878",
+    "src/llm/llama_wrap.cpp": "ebcbc9a47c5c52c1476422604057f912b703ec716d58e8efee95e11fc88aec23",
+    "src/llm/llama_wrap.hpp": "ff93c694fae5f5d2854126f94d0aa8dfa9bf23632a1d7cacd781cb4a3759e15c",
+    "tests/check_golden.ps1": "37f5ef81f2165e15b7e3e2f8a3ab1ef78e289337311ae1d2a4556175618aa04d",
+    "tests/kv_tree_tests.cpp": "f004bc63ffd13119766599ff368cf6db0bccfaf345d73a9c09cd01eca17feaec",
+    "tests/llama_lifecycle_tests.cpp": "74e6356448eda21f9b30dfd100f60d50faccf9c29267b862f8cbb542fb85004a",
+    "tests/minitest.hpp": "864d3be0a8e557c61bd6aee6c831738ad1a4286c5e7f00eec3fbc414d1e95754"
+  },
+  "purpose": "profiles",
+  "results": []
+}

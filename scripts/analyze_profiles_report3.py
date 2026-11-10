@@ -2,11 +2,20 @@
 """Summarize isolated flat CPU profiles; these runs are excluded from latency statistics."""
 import argparse
 import json
+import hashlib
+import re
+import textwrap
 from pathlib import Path
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+def display_symbol(symbol):
+    if "tinyBLAS" in symbol:
+        blocks=re.findall(r"block_(\w+)",symbol)
+        return "tinyBLAS " + "/".join(blocks) + " gemm"
+    return textwrap.fill(symbol.replace("`anonymous namespace'::", ""),width=32)
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__); ap.add_argument("directory"); args=ap.parse_args()
@@ -29,13 +38,19 @@ def main():
     decode=flat[flat.phase=="decode"].groupby(["arm","symbol"],as_index=False).cpu_delta_s.sum()
     decode["estimated_share"]=decode.cpu_delta_s/decode.groupby("arm").cpu_delta_s.transform("sum")
     decode.sort_values(["arm","estimated_share"],ascending=[True,False]).to_csv(root/"decode_hotspots.csv",index=False)
-    fig,axes=plt.subplots(1,2,figsize=(14,5))
+    fig,axes=plt.subplots(1,2,figsize=(15,7),layout="constrained")
     for ax,(arm,data) in zip(axes,decode.groupby("arm")):
         data=data.nlargest(8,"estimated_share").sort_values("estimated_share")
-        ax.barh(data.symbol,data.estimated_share*100)
+        ax.barh([display_symbol(s) for s in data.symbol],data.estimated_share*100)
         ax.set(xlabel="Approximate CPU-weighted IP share (%)",title=arm)
-    fig.suptitle("Decode flat profile: sampled instruction pointers, not stack-inclusive costs")
-    fig.tight_layout(); fig.savefig(root/"decode_hotspots.png",dpi=170); plt.close(fig)
+        ax.set_xlim(0,100)
+        ax.tick_params(axis="y",labelsize=9)
+    fig.suptitle("Decode flat profile: sampled instruction pointers, not stack-inclusive costs\nNearest DLL exports are labeled export::; full compute names are in the CSV",fontsize=12)
+    fig.savefig(root/"decode_hotspots.png",dpi=170); plt.close(fig)
+    (root/"analysis_provenance.json").write_text(json.dumps(dict(
+        analyzer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        symbols_sha256={p.parent.name:hashlib.sha256((p.parent/"symbols.csv").read_bytes()).hexdigest()
+            for p in root.glob("*/profile.json")}),indent=2))
     print(stats.to_string(index=False))
     print(decode.sort_values("estimated_share",ascending=False).head(12).to_string(index=False))
 

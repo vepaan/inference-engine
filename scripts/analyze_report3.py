@@ -2,6 +2,8 @@
 """Analyze recorded independent trials; never pool different controlled settings."""
 import argparse
 import json
+import hashlib
+import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -13,6 +15,12 @@ KEYS = ["model", "arm", "b", "P", "S", "threads", "flash_attn", "kv_type"]
 METRICS = ["n_ctx", "kv_bytes", "prefill_ms", "fork_us_p50", "fork_us_p99",
            "step_us_p50", "step_us_p90", "step_us_p99", "tok_per_s",
            "private_bytes", "peak_ws_bytes"]
+
+def q25(values):
+    return values.quantile(.25)
+
+def q75(values):
+    return values.quantile(.75)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -45,7 +53,7 @@ def main():
     if not np.allclose(df.kv_bytes, df.n_ctx * df.kappa_bytes):
         raise ValueError("Inconsistent configured KV byte units")
     grouped = df.groupby(KEYS, dropna=False)
-    summary = grouped[METRICS].agg(["median", "std", "min", "max",
+    summary = grouped[METRICS].agg(["median", "std", "min", "max", q25, q75,
         lambda x: x.quantile(.75) - x.quantile(.25)])
     summary.columns = [f"{c}_{'iqr' if f == '<lambda_0>' else f}" for c, f in summary.columns]
     summary["repetitions"] = grouped.size()
@@ -65,12 +73,13 @@ def main():
                 ["prefill_ms", "step_us_p50", "tok_per_s"], [1, .001, 1],
                 ["Prefill (ms)", "Decode step p50 (ms)", "Aggregate tokens/s"]):
                 ax.errorbar(data.b, data[f"{metric}_median"] * scale,
-                    yerr=data[f"{metric}_iqr"] * scale / 2, marker="o", label=arm,
+                    yerr=[(data[f"{metric}_median"]-data[f"{metric}_q25"])*scale,
+                          (data[f"{metric}_q75"]-data[f"{metric}_median"])*scale], marker="o", label=arm,
                     capsize=3)
                 ax.set(xlabel="Branches", ylabel=ylabel)
                 ax.set_xticks(sorted(data.b.unique()))
                 ax.legend()
-        fig.suptitle(f"P={p}, S={s}, threads={threads}, FA={fa}, KV={kv}; median +/- half IQR across trials")
+        fig.suptitle(f"P={p}, S={s}, threads={threads}, FA={fa}, KV={kv}; median and Q1-Q3 across trials")
         fig.tight_layout()
         fig.savefig(figures / f"performance-{label}.png", dpi=160)
         plt.close(fig)
@@ -95,12 +104,13 @@ def main():
             for ax, metric, scale, ylabel in zip(axes, ["step_us_p50", "tok_per_s"],
                 [.001, 1], ["Decode step p50 (ms)", "Aggregate tokens/s"]):
                 ax.errorbar(data.threads, data[f"{metric}_median"] * scale,
-                    yerr=data[f"{metric}_iqr"] * scale / 2, marker="o", label=arm)
+                    yerr=[(data[f"{metric}_median"]-data[f"{metric}_q25"])*scale,
+                          (data[f"{metric}_q75"]-data[f"{metric}_median"])*scale], marker="o", label=arm)
                 ax.set(xlabel="CPU threads", ylabel=ylabel)
                 ax.set_xticks(sorted(data.threads.unique()))
                 ax.legend()
         name = "-".join(map(str, setting))
-        fig.suptitle(f"b={setting[1]}, P={setting[2]}, S={setting[3]}, FA={setting[4]}, KV={setting[5]}; median +/- half IQR")
+        fig.suptitle(f"b={setting[1]}, P={setting[2]}, S={setting[3]}, FA={setting[4]}, KV={setting[5]}; median and Q1-Q3")
         fig.tight_layout()
         fig.savefig(figures / f"threads-{name}.png", dpi=160)
         plt.close(fig)
@@ -136,7 +146,7 @@ def main():
     observed = {(r.arm,r.b,r.P,r.S) for r in df.itertuples()}
     audit = dict(trials=len(df), configurations=len(summary), paired_configurations=complete,
                  missing_primary_configurations=sorted(expected-observed),
-                 variability_note="IQR and sample std use independent process trials; std undefined for n=1. Error bars are descriptive, not confidence intervals.")
+                 variability_note="IQR and sample std use independent process trials; std undefined for n=1. Error bars span Q1-Q3 and are descriptive, not confidence intervals.")
     environment_path = root / "environment.json"
     if environment_path.exists():
         environment = json.loads(environment_path.read_text())
@@ -156,6 +166,10 @@ def main():
         audit["primary_remaining_trials"] = sum(row["remaining"] for row in coverage)
         audit["primary_target_trials"] = 80
     (root / "validation.json").write_text(json.dumps(audit, indent=2))
+    (root / "analysis_provenance.json").write_text(json.dumps(dict(
+        analyzer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        raw_trials_sha256=hashlib.sha256((root/"raw_trials.csv").read_bytes()).hexdigest(),
+        command=sys.argv, pandas_version=pd.__version__, quantiles="linear interpolation; error bars Q1-Q3"), indent=2))
     print(json.dumps(audit, indent=2))
     print(f"Wrote summary, comparisons, and figures to {root}")
 

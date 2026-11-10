@@ -1,0 +1,73 @@
+phase,symbol,samples,active_samples,cpu_delta_s,estimated_cpu_share
+decode,export::ZwDelayExecution+0x14,1447,970,71.625,0.8203292770221904
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",74,71,4.875,0.05583392984967788
+decode,ggml_vec_dot_f16,37,37,2.203125,0.025232641374373657
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",29,29,1.671875,0.019148174659985685
+decode,ggml_vec_mad_f16,19,19,1.4375,0.0164638511095204
+decode,export::vcomp_ordered_loop_end+0x1f6f,11,10,1.171875,0.013421617752326413
+decode,ggml_vec_dot_q6_K_q8_K,7,7,0.5,0.00572655690765927
+decode,ggml_gemv_q4_K_8x8_q8_K,6,6,0.484375,0.005547602004294917
+decode,ggml_compute_forward_flash_attn_ext_f16_one_chunk,5,4,0.359375,0.0041159627773801
+decode,export::RtlDelayExecution+0x34,4,4,0.34375,0.003937007874015748
+decode,ggml_compute_forward_mul_mat,3,3,0.234375,0.002684323550465283
+decode,export::RtlDelayExecution+0x1d,1,1,0.15625,0.0017895490336435219
+decode,rotate_pairs<float>,2,2,0.140625,0.0016105941302791697
+decode,quantize_row_q8_0,2,2,0.140625,0.0016105941302791697
+decode,export::expf+0x8b,2,2,0.125,0.0014316392269148174
+decode,export::RtlFlsGetValue+0x40,1,1,0.125,0.0014316392269148174
+decode,export::vcomp_ordered_loop_end+0x1f65,3,2,0.109375,0.0012526843235504653
+decode,export::vcomp_ordered_loop_end+0x1f5f,1,1,0.109375,0.0012526843235504653
+decode,export::SwitchToThread+0x0,1,1,0.109375,0.0012526843235504653
+decode,ggml_graph_compute_thread,3,2,0.109375,0.0012526843235504653
+decode,export::expf+0x3c,2,2,0.078125,0.0008947745168217609
+decode,export::memmove+0x0,2,2,0.078125,0.0008947745168217609
+decode,export::GetTickCount64+0x7,1,1,0.078125,0.0008947745168217609
+decode,ggml_compute_forward_rope_flt<float>,1,1,0.078125,0.0008947745168217609
+decode,export::omp_get_wtick+0x206,1,1,0.078125,0.0008947745168217609
+decode,quantize_row_q8_K_ref,1,1,0.0625,0.0007158196134574087
+decode,export::vcomp_ordered_loop_end+0x1f68,1,1,0.0625,0.0007158196134574087
+decode,ggml_cpu_fp32_to_fp16,1,1,0.0625,0.0007158196134574087
+decode,export::memset+0x3,1,1,0.0625,0.0007158196134574087
+decode,export::expf+0x75,1,1,0.0625,0.0007158196134574087
+decode,export::logf+0x54,1,1,0.0625,0.0007158196134574087
+decode,export::GetProcessHeap+0xd,1,1,0.0625,0.0007158196134574087
+decode,ggml_barrier,1,1,0.0625,0.0007158196134574087
+decode,export::expf+0x45,1,1,0.0625,0.0007158196134574087
+decode,export::expf+0x67,1,1,0.0625,0.0007158196134574087
+decode,export::vcomp_barrier+0x3c,1,1,0.0625,0.0007158196134574087
+decode,export::RtlAllocateHeap+0x195d,1,1,0.0625,0.0007158196134574087
+decode,export::ZwUnmapViewOfSectionEx+0x14,1,1,0.0625,0.0007158196134574087
+decode,ggml_can_fuse,1,1,0.046875,0.0005368647100930566
+decode,export::NtWaitForWorkViaWorkerFactory+0x14,630,1,0.015625,0.00017895490336435218
+decode,ggml::cpu::repack::extra_buffer_type::get_tensor_traits,1,1,0.015625,0.00017895490336435218
+load,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",8,1,0.0625,0.3076923076923077
+load,"std::_Hash<std::_Umap_traits<std::basic_string<char,std::char_traits<char>,std::allocator<char> >,std::basic_string<char,std::char_traits<char>,std::allocator<char> >,std::_Uhash_compare<std::basic_string<char,std::char_traits<char>,std::allocator<char> >,std::hash<std::basic_string<char,std::char_traits<char>,std::allocator<char> > >,std::equal_to<std::basic_string<char,std::char_traits<char>,std::allocator<char> > > >,std::allocator<std::pair<std::basic_string<char,std::char_traits<char>,std::allocator<char> > const ,std::basic_string<char,std::char_traits<char>,std::allocator<char> > > >,0> >::_Find_last<std::basic_string<char,std::char_traits<char>,std::allocator<char> > >",1,1,0.046875,0.23076923076923078
+load,export::atol+0x523,1,1,0.046875,0.23076923076923078
+load,ggml_new_tensor_impl,1,1,0.046875,0.23076923076923078
+load,export::std::ios_base::width+0x8,1,0,0.0,0.0
+load,export::NtWaitForWorkViaWorkerFactory+0x14,15,0,0.0,0.0
+prefill,export::ZwDelayExecution+0x14,104,104,6.6875,0.3787610619469027
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",95,94,6.125,0.34690265486725663
+prefill,simd_gemm,20,20,1.359375,0.07699115044247788
+prefill,ggml_vec_dot_q6_K_q8_K,12,12,0.734375,0.0415929203539823
+prefill,ggml_compute_forward_flash_attn_ext_tiled,8,8,0.5625,0.03185840707964602
+prefill,quantize_row_q8_0,8,8,0.484375,0.02743362831858407
+prefill,ggml_vec_swiglu_f32,3,3,0.296875,0.016814159292035398
+prefill,export::vcomp_ordered_loop_end+0x1f6f,3,3,0.25,0.01415929203539823
+prefill,rotate_pairs<float>,2,2,0.140625,0.007964601769911504
+prefill,ggml_rope_cache_init,2,2,0.140625,0.007964601769911504
+prefill,quantize_row_q8_K_ref,2,2,0.125,0.007079646017699115
+prefill,ggml_graph_compute_thread,1,1,0.078125,0.004424778761061947
+prefill,ggml_vec_soft_max_f32,1,1,0.0625,0.0035398230088495575
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::mnpack",1,1,0.0625,0.0035398230088495575
+prefill,ggml_compute_forward_rope_flt<float>,1,1,0.0625,0.0035398230088495575
+prefill,export::memset+0x1a1,1,1,0.0625,0.0035398230088495575
+prefill,"apply_binary_op<&op_add,float,float,float>",1,1,0.0625,0.0035398230088495575
+prefill,ggml_compute_forward_rms_norm_f32<1>,1,1,0.0625,0.0035398230088495575
+prefill,export::memset+0x163,1,1,0.0625,0.0035398230088495575
+prefill,ggml_gemv_q4_K_8x8_q8_K,1,1,0.0625,0.0035398230088495575
+prefill,export::GetTickCount64+0x0,1,1,0.046875,0.002654867256637168
+prefill,export::RtlAllocateHeap+0x136d,1,1,0.046875,0.002654867256637168
+prefill,ggml_compute_forward_mul_mat,1,1,0.046875,0.002654867256637168
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",1,1,0.03125,0.0017699115044247787
+prefill,export::NtWaitForWorkViaWorkerFactory+0x14,102,0,0.0,0.0

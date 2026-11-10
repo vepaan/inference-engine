@@ -29,6 +29,7 @@ std::optional<BackendSeqId> SlotAllocator::acquire(
             free_stack_.erase(it);
             return preferred;
         }
+        return std::nullopt;
     }
     if (free_stack_.empty()) {
         return std::nullopt;
@@ -274,7 +275,15 @@ Node* KvRadixTree::fork(Node* at, BackendSeqId preferred_seq) {
         if (!destination.has_value()) {
             throw std::runtime_error("no physical sequence slot is available");
         }
-        backend_->share(source->holder->seq, destination.value(), -1, -1);
+        try {
+            // An internal node may use a descendant as the physical source.
+            // Only its prefix belongs to this fork, not the descendant suffix.
+            backend_->share(source->holder->seq, destination.value(), 0,
+                            static_cast<BackendPos>(depth(at)));
+        } catch (...) {
+            slots_.release(destination.value());
+            throw;
+        }
     }
     retain_path(at);
     return at;

@@ -53,6 +53,7 @@ struct Config {
     std::size_t warmup{0};
     bool verify{false};
     bool verify_batched{false};
+    bool teacher_forced{false};
     bool kv_f32{false};
     bool phase_markers{false};
     bool trace_attention{false};
@@ -206,6 +207,12 @@ struct RunResult {
         step_us.reserve(config.suffix);
         std::vector<BackendPos> positions(config.branches);
         for (std::size_t step = 0; step < config.suffix; ++step) {
+            // Diagnostic replay: both arms and the independent reference receive
+            // exactly the same branch-specific inputs, even after predictions differ.
+            if (config.teacher_forced) {
+                next_tokens = make_tokens(config.branches, model.info().n_vocab,
+                                          config.prefix + step * config.branches);
+            }
             std::fill(positions.begin(), positions.end(),
                       static_cast<BackendPos>(config.prefix + step));
             const auto step_start = std::chrono::steady_clock::now();
@@ -250,19 +257,21 @@ struct RunResult {
                 // KV holds the initial suffix input followed by all generated
                 // tokens except the final prediction (which has not been fed).
                 auto consumed = generated[branch];
-                consumed.pop_back();
-                consumed.insert(consumed.begin(), initial_tokens[branch]);
+                if (config.teacher_forced) {
+                    for (std::size_t step = 0; step < config.suffix; ++step) {
+                        consumed[step] = make_tokens(config.branches, model.info().n_vocab,
+                            config.prefix + step * config.branches)[branch];
+                    }
+                } else {
+                    consumed.pop_back();
+                    consumed.insert(consumed.begin(), initial_tokens[branch]);
+                }
                 static_cast<void>(tree->commit(prefix_node, consumed, holder));
             }
             if (!tree->validate()) {
                 std::cerr << "run_once n_ctx=" << n_ctx
                           << ": tree validation failed after commit\n";
                 return std::nullopt;
-            }
-            for (std::size_t branch = 0; branch < config.branches; ++branch) {
-                const auto match = tree->match_prefix(
-                    std::span<const TokenId>(generated[branch]));
-                static_cast<void>(match);
             }
         }
 
@@ -279,12 +288,15 @@ struct RunResult {
 
 [[nodiscard]] std::optional<RunResult> find_min_context(
     const Model& model, const Config& config, std::uint32_t predicted) {
-    // Search on the backend's 256-cell allocation grid. Exploratory timings
-    // are discarded; report the smallest successful aligned capacity.
+    // The pinned backend pads each non-unified sequence to 256 cells
+    // (llama-context.cpp). Skip requests with identical effective capacities.
+    const auto quantum = static_cast<std::uint32_t>(
+        256U * (config.arm == "naive" ? config.branches : 1U));
     std::optional<RunResult> result;
-    for (std::uint32_t candidate = predicted;
-         candidate <= predicted + 4096; candidate += 256) {
-        result = run_once(model, config, candidate);
+    for (std::uint64_t candidate = predicted;
+         candidate <= static_cast<std::uint64_t>(predicted) + 4096U &&
+         candidate <= std::numeric_limits<std::uint32_t>::max(); candidate += quantum) {
+        result = run_once(model, config, static_cast<std::uint32_t>(candidate));
         if (result.has_value()) {
             break;
         }
@@ -292,8 +304,9 @@ struct RunResult {
     if (!result.has_value()) {
         return std::nullopt;
     }
-    for (std::uint32_t candidate = result->n_ctx - 256;
-         candidate >= 256; candidate -= 256) {
+    for (std::uint32_t candidate = result->n_ctx;
+         candidate > quantum;) {
+        candidate -= quantum;
         auto smaller = run_once(model, config, candidate);
         if (!smaller.has_value()) {
             break;
@@ -349,7 +362,10 @@ struct CorrectnessResult {
         bool same_history = true;
         for (std::size_t step = 0; step < config.suffix; ++step) {
             const std::array<BackendSeqId, 1> seqs{0};
-            const std::array<TokenId, 1> tokens{next_token};
+            const std::array<TokenId, 1> tokens{config.teacher_forced
+                ? make_tokens(config.branches, model.info().n_vocab,
+                              config.prefix + step * config.branches)[branch]
+                : next_token};
             const std::array<BackendPos, 1> positions{
                 static_cast<BackendPos>(config.prefix + step)};
             const auto result = context.decode_lockstep(seqs, tokens, positions);
@@ -363,7 +379,7 @@ struct CorrectnessResult {
             // Logits are comparable only while input histories are identical.
             // Include the first different prediction, then stop logit comparisons
             // for this branch; still compare the complete free-running token streams.
-            if (same_history) {
+            if (same_history || config.teacher_forced) {
                 const auto logits = context.logits_ith(0);
                 const auto& test_logits = test_result.verification_logits[branch][step];
                 double step_max = 0.0;
@@ -378,7 +394,7 @@ struct CorrectnessResult {
                     sum_diff += diff;
                     ++logit_count;
                 }
-                if (next_token != test_result.generated[branch][step]) {
+                if (same_history && next_token != test_result.generated[branch][step]) {
                     std::cerr << "First token divergence: branch=" << branch
                               << " step=" << step << " independent=" << next_token
                               << " shared=" << test_result.generated[branch][step]
@@ -403,7 +419,7 @@ struct CorrectnessResult {
 }
 
 [[nodiscard]] CorrectnessResult compare_batched_runs(
-    const RunResult& tested, const RunResult& reference) {
+    const RunResult& tested, const RunResult& reference, bool teacher_forced) {
     std::size_t matches = 0;
     std::size_t total = 0;
     std::size_t count = 0;
@@ -412,7 +428,7 @@ struct CorrectnessResult {
     for (std::size_t branch = 0; branch < tested.generated.size(); ++branch) {
         bool same_history = true;
         for (std::size_t step = 0; step < tested.generated[branch].size(); ++step) {
-            if (same_history) {
+            if (same_history || teacher_forced) {
                 const auto& a = tested.verification_logits[branch][step];
                 const auto& b = reference.verification_logits[branch][step];
                 for (std::size_t i = 0; i < a.size(); ++i) {
@@ -485,6 +501,8 @@ struct CorrectnessResult {
             config.warmup = std::stoull(require_value(argument));
         } else if (argument == "--verify-batched") {
             config.verify_batched = true;
+        } else if (argument == "--teacher-forced") {
+            config.teacher_forced = true;
         } else if (argument == "--verify") {
             config.verify = true;
         } else if (argument == "--discovery-only") {
@@ -494,6 +512,9 @@ struct CorrectnessResult {
         } else {
             throw std::invalid_argument("unknown argument: " + argument);
         }
+    }
+    if (config.teacher_forced && !(config.verify || config.verify_batched)) {
+        throw std::invalid_argument("--teacher-forced requires a verification mode");
     }
     if (config.model_path.empty() ||
         (config.arm != "naive" && config.arm != "tree") ||
@@ -523,6 +544,9 @@ struct CorrectnessResult {
 int main(int argc, char** argv) {
     try {
         const Config config = parse_args(argc, argv);
+        if (config.teacher_forced) {
+            std::cout << "VERIFICATION_INPUT,teacher-forced-synthetic\n";
+        }
         const Model model(config.model_path);
         const std::size_t kappa_bytes = model.info().kappa_bytes * (config.kv_f32 ? 2U : 1U);
         const std::size_t n_ctx_pred = config.arm == "naive"
@@ -581,7 +605,7 @@ int main(int argc, char** argv) {
             if (!paired_run.has_value()) {
                 throw std::runtime_error("untimed batched reference workload failed");
             }
-            const auto batched = compare_batched_runs(verification_run.value(), paired_run.value());
+            const auto batched = compare_batched_runs(verification_run.value(), paired_run.value(), config.teacher_forced);
             std::cout << "CSV_BATCH_VERIFY,"
                       << std::filesystem::path(config.model_path).filename().string()
                       << "," << config.branches << "," << config.prefix << "," << config.suffix

@@ -1,0 +1,436 @@
+diff --git a/.gitattributes b/.gitattributes
+index a075691..1c99b52 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -1,3 +1,4 @@
+ 
+ # Preserve captured experiment bytes, including source-snapshot hashes.
+ /results/report3/** -text
++/results/wrapup/** -text
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b3a8aa9..85dfde8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -206,6 +206,15 @@ if(MSVC AND IE_PROFILE_SYMBOLS)
+ endif()
+ set(IE_TEST_GGUF "" CACHE FILEPATH "Optional GGUF for real-model correctness regression")
+ if(BUILD_TESTING AND IE_WITH_LLAMA AND IE_TEST_GGUF)
++    add_executable(ie_lifecycle_tests tests/llama_lifecycle_tests.cpp)
++    target_compile_features(ie_lifecycle_tests PRIVATE cxx_std_20)
++    target_link_libraries(ie_lifecycle_tests PRIVATE kv_tree ie_llm)
++    if(MSVC)
++        target_compile_options(ie_lifecycle_tests PRIVATE /W4 /WX /permissive-)
++    else()
++        target_compile_options(ie_lifecycle_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
++    endif()
++    add_test(NAME ie_real_lifecycle COMMAND ie_lifecycle_tests ${IE_TEST_GGUF})
+     add_test(NAME ie_real_correctness_f32 COMMAND ie_tree_bench
+         --model ${IE_TEST_GGUF} --arm tree --b 2 --prefix 1024 --suffix 8
+         --threads 2 --flash-attn off --kv-type f32 --n-ctx 1536 --verify)
+diff --git a/apps/ie_tree_bench.cpp b/apps/ie_tree_bench.cpp
+index dfb971e..5e365aa 100644
+--- a/apps/ie_tree_bench.cpp
++++ b/apps/ie_tree_bench.cpp
+@@ -53,6 +53,7 @@ struct Config {
+     std::size_t warmup{0};
+     bool verify{false};
+     bool verify_batched{false};
++    bool teacher_forced{false};
+     bool kv_f32{false};
+     bool phase_markers{false};
+     bool trace_attention{false};
+@@ -206,6 +207,12 @@ struct RunResult {
+         step_us.reserve(config.suffix);
+         std::vector<BackendPos> positions(config.branches);
+         for (std::size_t step = 0; step < config.suffix; ++step) {
++            // Diagnostic replay: both arms and the independent reference receive
++            // exactly the same branch-specific inputs, even after predictions differ.
++            if (config.teacher_forced) {
++                next_tokens = make_tokens(config.branches, model.info().n_vocab,
++                                          config.prefix + step * config.branches);
++            }
+             std::fill(positions.begin(), positions.end(),
+                       static_cast<BackendPos>(config.prefix + step));
+             const auto step_start = std::chrono::steady_clock::now();
+@@ -250,8 +257,15 @@ struct RunResult {
+                 // KV holds the initial suffix input followed by all generated
+                 // tokens except the final prediction (which has not been fed).
+                 auto consumed = generated[branch];
+-                consumed.pop_back();
+-                consumed.insert(consumed.begin(), initial_tokens[branch]);
++                if (config.teacher_forced) {
++                    for (std::size_t step = 0; step < config.suffix; ++step) {
++                        consumed[step] = make_tokens(config.branches, model.info().n_vocab,
++                            config.prefix + step * config.branches)[branch];
++                    }
++                } else {
++                    consumed.pop_back();
++                    consumed.insert(consumed.begin(), initial_tokens[branch]);
++                }
+                 static_cast<void>(tree->commit(prefix_node, consumed, holder));
+             }
+             if (!tree->validate()) {
+@@ -259,11 +273,6 @@ struct RunResult {
+                           << ": tree validation failed after commit\n";
+                 return std::nullopt;
+             }
+-            for (std::size_t branch = 0; branch < config.branches; ++branch) {
+-                const auto match = tree->match_prefix(
+-                    std::span<const TokenId>(generated[branch]));
+-                static_cast<void>(match);
+-            }
+         }
+ 
+         return RunResult{context.n_ctx(), prefill_ms, std::move(fork_us),
+@@ -279,12 +288,15 @@ struct RunResult {
+ 
+ [[nodiscard]] std::optional<RunResult> find_min_context(
+     const Model& model, const Config& config, std::uint32_t predicted) {
+-    // Search on the backend's 256-cell allocation grid. Exploratory timings
+-    // are discarded; report the smallest successful aligned capacity.
++    // The pinned backend pads each non-unified sequence to 256 cells
++    // (llama-context.cpp). Skip requests with identical effective capacities.
++    const auto quantum = static_cast<std::uint32_t>(
++        256U * (config.arm == "naive" ? config.branches : 1U));
+     std::optional<RunResult> result;
+-    for (std::uint32_t candidate = predicted;
+-         candidate <= predicted + 4096; candidate += 256) {
+-        result = run_once(model, config, candidate);
++    for (std::uint64_t candidate = predicted;
++         candidate <= static_cast<std::uint64_t>(predicted) + 4096U &&
++         candidate <= std::numeric_limits<std::uint32_t>::max(); candidate += quantum) {
++        result = run_once(model, config, static_cast<std::uint32_t>(candidate));
+         if (result.has_value()) {
+             break;
+         }
+@@ -292,8 +304,9 @@ struct RunResult {
+     if (!result.has_value()) {
+         return std::nullopt;
+     }
+-    for (std::uint32_t candidate = result->n_ctx - 256;
+-         candidate >= 256; candidate -= 256) {
++    for (std::uint32_t candidate = result->n_ctx;
++         candidate > quantum;) {
++        candidate -= quantum;
+         auto smaller = run_once(model, config, candidate);
+         if (!smaller.has_value()) {
+             break;
+@@ -349,7 +362,10 @@ struct CorrectnessResult {
+         bool same_history = true;
+         for (std::size_t step = 0; step < config.suffix; ++step) {
+             const std::array<BackendSeqId, 1> seqs{0};
+-            const std::array<TokenId, 1> tokens{next_token};
++            const std::array<TokenId, 1> tokens{config.teacher_forced
++                ? make_tokens(config.branches, model.info().n_vocab,
++                              config.prefix + step * config.branches)[branch]
++                : next_token};
+             const std::array<BackendPos, 1> positions{
+                 static_cast<BackendPos>(config.prefix + step)};
+             const auto result = context.decode_lockstep(seqs, tokens, positions);
+@@ -363,7 +379,7 @@ struct CorrectnessResult {
+             // Logits are comparable only while input histories are identical.
+             // Include the first different prediction, then stop logit comparisons
+             // for this branch; still compare the complete free-running token streams.
+-            if (same_history) {
++            if (same_history || config.teacher_forced) {
+                 const auto logits = context.logits_ith(0);
+                 const auto& test_logits = test_result.verification_logits[branch][step];
+                 double step_max = 0.0;
+@@ -378,7 +394,7 @@ struct CorrectnessResult {
+                     sum_diff += diff;
+                     ++logit_count;
+                 }
+-                if (next_token != test_result.generated[branch][step]) {
++                if (same_history && next_token != test_result.generated[branch][step]) {
+                     std::cerr << "First token divergence: branch=" << branch
+                               << " step=" << step << " independent=" << next_token
+                               << " shared=" << test_result.generated[branch][step]
+@@ -403,7 +419,7 @@ struct CorrectnessResult {
+ }
+ 
+ [[nodiscard]] CorrectnessResult compare_batched_runs(
+-    const RunResult& tested, const RunResult& reference) {
++    const RunResult& tested, const RunResult& reference, bool teacher_forced) {
+     std::size_t matches = 0;
+     std::size_t total = 0;
+     std::size_t count = 0;
+@@ -412,7 +428,7 @@ struct CorrectnessResult {
+     for (std::size_t branch = 0; branch < tested.generated.size(); ++branch) {
+         bool same_history = true;
+         for (std::size_t step = 0; step < tested.generated[branch].size(); ++step) {
+-            if (same_history) {
++            if (same_history || teacher_forced) {
+                 const auto& a = tested.verification_logits[branch][step];
+                 const auto& b = reference.verification_logits[branch][step];
+                 for (std::size_t i = 0; i < a.size(); ++i) {
+@@ -485,6 +501,8 @@ struct CorrectnessResult {
+             config.warmup = std::stoull(require_value(argument));
+         } else if (argument == "--verify-batched") {
+             config.verify_batched = true;
++        } else if (argument == "--teacher-forced") {
++            config.teacher_forced = true;
+         } else if (argument == "--verify") {
+             config.verify = true;
+         } else if (argument == "--discovery-only") {
+@@ -495,6 +513,9 @@ struct CorrectnessResult {
+             throw std::invalid_argument("unknown argument: " + argument);
+         }
+     }
++    if (config.teacher_forced && !(config.verify || config.verify_batched)) {
++        throw std::invalid_argument("--teacher-forced requires a verification mode");
++    }
+     if (config.model_path.empty() ||
+         (config.arm != "naive" && config.arm != "tree") ||
+         config.branches == 0 || config.branches > 256 || config.prefix == 0 ||
+@@ -523,6 +544,9 @@ struct CorrectnessResult {
+ int main(int argc, char** argv) {
+     try {
+         const Config config = parse_args(argc, argv);
++        if (config.teacher_forced) {
++            std::cout << "VERIFICATION_INPUT,teacher-forced-synthetic\n";
++        }
+         const Model model(config.model_path);
+         const std::size_t kappa_bytes = model.info().kappa_bytes * (config.kv_f32 ? 2U : 1U);
+         const std::size_t n_ctx_pred = config.arm == "naive"
+@@ -581,7 +605,7 @@ int main(int argc, char** argv) {
+             if (!paired_run.has_value()) {
+                 throw std::runtime_error("untimed batched reference workload failed");
+             }
+-            const auto batched = compare_batched_runs(verification_run.value(), paired_run.value());
++            const auto batched = compare_batched_runs(verification_run.value(), paired_run.value(), config.teacher_forced);
+             std::cout << "CSV_BATCH_VERIFY,"
+                       << std::filesystem::path(config.model_path).filename().string()
+                       << "," << config.branches << "," << config.prefix << "," << config.suffix
+diff --git a/core/kv_tree.cpp b/core/kv_tree.cpp
+index d255a58..e868c8d 100644
+--- a/core/kv_tree.cpp
++++ b/core/kv_tree.cpp
+@@ -29,6 +29,7 @@ std::optional<BackendSeqId> SlotAllocator::acquire(
+             free_stack_.erase(it);
+             return preferred;
+         }
++        return std::nullopt;
+     }
+     if (free_stack_.empty()) {
+         return std::nullopt;
+@@ -274,7 +275,15 @@ Node* KvRadixTree::fork(Node* at, BackendSeqId preferred_seq) {
+         if (!destination.has_value()) {
+             throw std::runtime_error("no physical sequence slot is available");
+         }
+-        backend_->share(source->holder->seq, destination.value(), -1, -1);
++        try {
++            // An internal node may use a descendant as the physical source.
++            // Only its prefix belongs to this fork, not the descendant suffix.
++            backend_->share(source->holder->seq, destination.value(), 0,
++                            static_cast<BackendPos>(depth(at)));
++        } catch (...) {
++            slots_.release(destination.value());
++            throw;
++        }
+     }
+     retain_path(at);
+     return at;
+@@ -512,4 +521,4 @@ void KvRadixTree::detach(Node* node) {
+     }
+ }
+ 
+-}  // namespace inference_engine
+\ No newline at end of file
++}  // namespace inference_engine
+diff --git a/scripts/profile_cpu_report3.py b/scripts/profile_cpu_report3.py
+index f28bf80..bcbfcfe 100644
+--- a/scripts/profile_cpu_report3.py
++++ b/scripts/profile_cpu_report3.py
+@@ -67,12 +67,21 @@ def main():
+     reader=threading.Thread(target=read_stdout,daemon=True); reader.start()
+     symbols=bool(dbg.SymInitialize(handle,str(Path(cmd[0]).resolve().parent).encode(),True))
+     phase="load"; refreshed=False; samples=[]; timeline=[]; previous_threads={}; last_cpu=0.; last_wall=time.perf_counter(); start=last_wall
++    cache={}
++    def resolve(rip):
++        storage=ct.create_string_buffer(ct.sizeof(SymbolInfo)+1024)
++        info=ct.cast(storage,ct.POINTER(SymbolInfo))
++        info.contents.SizeOfStruct=ct.sizeof(SymbolInfo); info.contents.MaxNameLen=1024
++        displacement=ct.c_ulonglong()
++        if symbols and dbg.SymFromAddr(handle,rip,ct.byref(displacement),info):
++            return ct.string_at(ct.addressof(storage)+SymbolInfo.Name.offset,info.contents.NameLen).decode(errors="replace")
++        return "unresolved"
+     failures=collections.Counter()
+     try:
+         while proc.poll() is None:
+             tick=time.perf_counter()
+             while not phases.empty(): phase=phases.get()
+-            if phase=="prefill" and symbols and not refreshed:
++            if phase in ("prefill", "fork", "decode") and symbols and not refreshed:
+                 dbg.SymRefreshModuleList(handle); refreshed=True
+             try:
+                 times=child.cpu_times(); cpu=times.user+times.system
+@@ -103,18 +112,16 @@ def main():
+                     finally:
+                         if suspended: kernel.ResumeThread(h)
+                         kernel.CloseHandle(h)
++                # Resolve while modules are still loaded, after resuming every
++                # sampled thread. DbgHelp stays on this single sampler thread.
++                for rip in {r["rip"] for r in samples if r["rip"] not in cache}:
++                    cache[rip]=resolve(rip)
+             except (psutil.NoSuchProcess,psutil.AccessDenied):
+                 failures["process_query"]+=1
+             time.sleep(max(0.,args.interval_ms/1000-(time.perf_counter()-tick)))
+         code=proc.wait(); reader.join(timeout=5)
+-        cache={}
+         for rip in {r["rip"] for r in samples}:
+-            storage=ct.create_string_buffer(ct.sizeof(SymbolInfo)+1024)
+-            info=ct.cast(storage,ct.POINTER(SymbolInfo)); info.contents.SizeOfStruct=ct.sizeof(SymbolInfo); info.contents.MaxNameLen=1024
+-            displacement=ct.c_ulonglong()
+-            if symbols and dbg.SymFromAddr(handle,rip,ct.byref(displacement),info):
+-                cache[rip]=ct.string_at(ct.addressof(storage)+SymbolInfo.Name.offset,info.contents.NameLen).decode(errors="replace")
+-            else: cache[rip]="unresolved"
++            if rip not in cache: cache[rip]=resolve(rip)
+         groups=collections.defaultdict(lambda:[0,0,0.])
+         for row in samples:
+             row["symbol"]=cache[row["rip"]]; row["rip"]=hex(row["rip"])
+@@ -131,6 +138,8 @@ def main():
+             method="Flat instruction pointers of this launched child's threads; CPU-time deltas weight approximate attribution; instrumentation perturbs execution; no stacks or hardware counters",
+             executable_sha256=hashlib.sha256(Path(cmd[0]).read_bytes()).hexdigest(),
+             profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
++            model_sha256=hashlib.sha256(Path(cmd[cmd.index("--model")+1]).read_bytes()).hexdigest() if "--model" in cmd else None,
++            symbol_resolution="live process; local PDBs; unresolved addresses retained",
+             git_commit=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip())
+         (out/"profile.json").write_text(json.dumps(metadata,indent=2))
+         print(json.dumps(metadata,indent=2))
+diff --git a/scripts/run_benchmarks_report3.ps1 b/scripts/run_benchmarks_report3.ps1
+index 3d7ec99..158749a 100644
+--- a/scripts/run_benchmarks_report3.ps1
++++ b/scripts/run_benchmarks_report3.ps1
+@@ -1,7 +1,7 @@
+ param(
+     [string] $BuildDir = "build/Release",
+     [Alias("ModelPath")][string] $Model135 = "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
+-    [string] $OutputDir = "results/report3/final/campaign",
++    [string] $OutputDir = "results/wrapup/measurements",
+     [ValidateSet("f16","f32")][string] $KVType = "f16",
+     [ValidateSet(0,1)][int] $FlashAttention = 1,
+     [Alias("Repetitions")][ValidateRange(1,100)][int] $Trials = 5,
+@@ -45,7 +45,7 @@ foreach ($file in ($sourceFiles | Sort-Object -Unique)) {
+ }
+ $identity = [ordered]@{
+     git_commit = (git rev-parse HEAD).Trim()
+-    llama_cpp_commit = (git -C third_party/llama.cpp rev-parse HEAD).Trim()
++    llama_cpp_commit = (git -c "safe.directory=$((Resolve-Path third_party/llama.cpp).Path.Replace('\','/'))" -C third_party/llama.cpp rev-parse HEAD).Trim()
+     source_sha256 = $sourceHashes
+     executable_sha256 = (Get-FileHash $treeBenchExe -Algorithm SHA256).Hash
+     bandwidth_executable_sha256 = (Get-FileHash $bwBenchExe -Algorithm SHA256).Hash
+@@ -58,7 +58,7 @@ $identity = [ordered]@{
+     sampling = "greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping"
+     kv_type = "$KVType K and V; CPU only"
+     latency_quantile = "linear interpolation (type 7)"
+-    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
++    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; LLAMA_GRAPH_REUSE_DISABLE = $env:LLAMA_GRAPH_REUSE_DISABLE; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
+ }
+ $identityJson = $identity | ConvertTo-Json -Depth 8 -Compress
+ $cacheFile = (Resolve-Path (Join-Path (Split-Path $BuildDir) "CMakeCache.txt")).Path
+diff --git a/src/llm/llama_wrap.cpp b/src/llm/llama_wrap.cpp
+index 920421a..313ba0c 100644
+--- a/src/llm/llama_wrap.cpp
++++ b/src/llm/llama_wrap.cpp
+@@ -224,6 +224,10 @@ std::uint32_t Context::n_ctx() const noexcept { return llama_n_ctx(context_); }
+ 
+ std::uint32_t Context::n_seq_max() const noexcept { return n_seq_max_; }
+ 
++llama_pos Context::seq_position_max(llama_seq_id seq) const {
++    return llama_memory_seq_pos_max(llama_get_memory(context_), seq);
++}
++
+ DecodeStatus Context::decode(llama_batch batch) const {
+     const int32_t result = llama_decode(context_, batch);
+     if (result == 0) {
+@@ -235,4 +239,4 @@ DecodeStatus Context::decode(llama_batch batch) const {
+     return DecodeStatus::Error;
+ }
+ 
+-}  // namespace inference_engine::llm
+\ No newline at end of file
++}  // namespace inference_engine::llm
+diff --git a/src/llm/llama_wrap.hpp b/src/llm/llama_wrap.hpp
+index 665baa1..07186a8 100644
+--- a/src/llm/llama_wrap.hpp
++++ b/src/llm/llama_wrap.hpp
+@@ -71,6 +71,7 @@ public:
+ 
+     [[nodiscard]] std::uint32_t n_ctx() const noexcept;
+     [[nodiscard]] std::uint32_t n_seq_max() const noexcept;
++    [[nodiscard]] llama_pos seq_position_max(llama_seq_id seq) const;
+ 
+ private:
+     llama_context* context_;
+@@ -81,4 +82,4 @@ private:
+     [[nodiscard]] DecodeStatus decode(llama_batch batch) const;
+ };
+ 
+-}  // namespace inference_engine::llm
+\ No newline at end of file
++}  // namespace inference_engine::llm
+diff --git a/tests/kv_tree_tests.cpp b/tests/kv_tree_tests.cpp
+index 7ca84d6..fd1917c 100644
+--- a/tests/kv_tree_tests.cpp
++++ b/tests/kv_tree_tests.cpp
+@@ -3,6 +3,7 @@
+ #include "minitest.hpp"
+ 
+ #include <algorithm>
++#include <array>
+ #include <cstddef>
+ #include <cstdint>
+ #include <span>
+@@ -17,6 +18,52 @@ using inference_engine::Node;
+ using inference_engine::SeqRange;
+ using inference_engine::TokenId;
+ 
++class RecordingBackend final : public inference_engine::IKvBackend {
++public:
++    std::vector<std::array<std::int32_t, 4>> shares;
++    bool fail_share{false};
++    void share(BackendSeqId source, BackendSeqId destination,
++               BackendPos begin, BackendPos end) override {
++        if (fail_share) { throw std::runtime_error("injected backend failure"); }
++        shares.push_back({source, destination, begin, end});
++    }
++    void drop(BackendSeqId, BackendPos, BackendPos) override {}
++    [[nodiscard]] std::size_t cells_in_use() const noexcept override { return 0; }
++};
++
++IE_TEST_CASE(internal_prefix_fork_excludes_descendant_suffix) {
++    RecordingBackend backend;
++    KvRadixTree tree(&backend, 3);
++    Node* prefix = tree.append(tree.root(), std::vector<TokenId>{1, 2}, SeqRange{0, 0, 2});
++    static_cast<void>(tree.fork(prefix, 0));
++    static_cast<void>(tree.commit(prefix, std::vector<TokenId>{3, 4}, SeqRange{0, 0, 4}));
++    static_cast<void>(tree.fork(prefix, 1));
++    IE_CHECK(backend.shares.size() == 1);
++    IE_CHECK((backend.shares.front() == std::array<std::int32_t, 4>{0, 1, 0, 2}));
++}
++
++IE_TEST_CASE(failed_backend_share_returns_reserved_slot) {
++    RecordingBackend backend;
++    KvRadixTree tree(&backend, 2);
++    Node* prefix = tree.append(tree.root(), std::vector<TokenId>{1}, SeqRange{0, 0, 1});
++    backend.fail_share = true;
++    bool failed = false;
++    try { static_cast<void>(tree.fork(prefix, 1)); }
++    catch (const std::runtime_error&) { failed = true; }
++    IE_CHECK(failed);
++    IE_CHECK(prefix->ref_count.load() == 0);
++    backend.fail_share = false;
++    IE_CHECK(tree.fork(prefix, 1) == prefix);
++    IE_CHECK(backend.shares.back()[1] == 1);
++}
++
++IE_TEST_CASE(explicit_busy_slot_cannot_silently_choose_another) {
++    inference_engine::SlotAllocator slots(3);
++    IE_CHECK(slots.acquire(1).value() == 1);
++    IE_CHECK(!slots.acquire(1).has_value());
++    IE_CHECK(slots.acquire(2).value() == 2);
++}
++
+ class SplitMix64 {
+ public:
+     explicit SplitMix64(std::uint64_t seed) : state_(seed) {}

@@ -1,7 +1,7 @@
 param(
     [string] $BuildDir = "build/Release",
     [Alias("ModelPath")][string] $Model135 = "models/SmolLM2-135M-Instruct-Q4_K_M.gguf",
-    [string] $OutputDir = "results/report3/final/campaign",
+    [string] $OutputDir = "results/wrapup/measurements",
     [ValidateSet("f16","f32")][string] $KVType = "f16",
     [ValidateSet(0,1)][int] $FlashAttention = 1,
     [Alias("Repetitions")][ValidateRange(1,100)][int] $Trials = 5,
@@ -45,7 +45,7 @@ foreach ($file in ($sourceFiles | Sort-Object -Unique)) {
 }
 $identity = [ordered]@{
     git_commit = (git rev-parse HEAD).Trim()
-    llama_cpp_commit = (git -C third_party/llama.cpp rev-parse HEAD).Trim()
+    llama_cpp_commit = (git -c "safe.directory=$((Resolve-Path third_party/llama.cpp).Path.Replace('\','/'))" -C third_party/llama.cpp rev-parse HEAD).Trim()
     source_sha256 = $sourceHashes
     executable_sha256 = (Get-FileHash $treeBenchExe -Algorithm SHA256).Hash
     bandwidth_executable_sha256 = (Get-FileHash $bwBenchExe -Algorithm SHA256).Hash
@@ -58,7 +58,7 @@ $identity = [ordered]@{
     sampling = "greedy; synthetic token IDs 1 + index modulo (vocabulary size - 1); no EOS stopping"
     kv_type = "$KVType K and V; CPU only"
     latency_quantile = "linear interpolation (type 7)"
-    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
+    cpu_environment = [ordered]@{ GGML_CPU_DISABLE_FUSION = $env:GGML_CPU_DISABLE_FUSION; GGML_NO_IQ_PANEL = $env:GGML_NO_IQ_PANEL; LLAMA_GRAPH_REUSE_DISABLE = $env:LLAMA_GRAPH_REUSE_DISABLE; OMP_NUM_THREADS = $env:OMP_NUM_THREADS; OMP_WAIT_POLICY = $env:OMP_WAIT_POLICY }
 }
 $identityJson = $identity | ConvertTo-Json -Depth 8 -Compress
 $cacheFile = (Resolve-Path (Join-Path (Split-Path $BuildDir) "CMakeCache.txt")).Path
@@ -189,9 +189,15 @@ if ($Experiment -in @("All","Threads")) {
     }
 }
 if ($Experiment -in @("All","Attention")) {
-    foreach ($fa in @(0,1)) { for ($r=1; $r -le $Trials; $r++) { foreach ($arm in @("naive","tree")) {
-        Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $Threads $fa $r
-    } } }
+    foreach ($fa in @(0,1)) {
+        # This ablation is meaningful only when the two storage arms agree.
+        # Retain the failed check and stop before recording unsupported timings.
+        $mode = if ($fa -eq 1) { "on" } else { "off" }
+        $null = Invoke-Native @("--model",$Model135,"--arm","tree","--b",$ProfileBranches,"--prefix",$ProfilePrefix,"--suffix",200,"--threads",$Threads,"--flash-attn",$mode,"--kv-type",$KVType,"--verify-batched") "attention-parity-b$ProfileBranches-p$ProfilePrefix-fa$fa"
+        for ($r=1; $r -le $Trials; $r++) { foreach ($arm in @("naive","tree")) {
+            Invoke-Trial $arm $ProfileBranches $ProfilePrefix 200 $Threads $fa $r
+        } }
+    }
 }
 if ($Experiment -in @("All","Bandwidth")) {
     # Preserve prior calibrations and individual pass measurements.

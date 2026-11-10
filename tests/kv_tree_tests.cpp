@@ -3,6 +3,7 @@
 #include "minitest.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -16,6 +17,52 @@ using inference_engine::KvRadixTree;
 using inference_engine::Node;
 using inference_engine::SeqRange;
 using inference_engine::TokenId;
+
+class RecordingBackend final : public inference_engine::IKvBackend {
+public:
+    std::vector<std::array<std::int32_t, 4>> shares;
+    bool fail_share{false};
+    void share(BackendSeqId source, BackendSeqId destination,
+               BackendPos begin, BackendPos end) override {
+        if (fail_share) { throw std::runtime_error("injected backend failure"); }
+        shares.push_back({source, destination, begin, end});
+    }
+    void drop(BackendSeqId, BackendPos, BackendPos) override {}
+    [[nodiscard]] std::size_t cells_in_use() const noexcept override { return 0; }
+};
+
+IE_TEST_CASE(internal_prefix_fork_excludes_descendant_suffix) {
+    RecordingBackend backend;
+    KvRadixTree tree(&backend, 3);
+    Node* prefix = tree.append(tree.root(), std::vector<TokenId>{1, 2}, SeqRange{0, 0, 2});
+    static_cast<void>(tree.fork(prefix, 0));
+    static_cast<void>(tree.commit(prefix, std::vector<TokenId>{3, 4}, SeqRange{0, 0, 4}));
+    static_cast<void>(tree.fork(prefix, 1));
+    IE_CHECK(backend.shares.size() == 1);
+    IE_CHECK((backend.shares.front() == std::array<std::int32_t, 4>{0, 1, 0, 2}));
+}
+
+IE_TEST_CASE(failed_backend_share_returns_reserved_slot) {
+    RecordingBackend backend;
+    KvRadixTree tree(&backend, 2);
+    Node* prefix = tree.append(tree.root(), std::vector<TokenId>{1}, SeqRange{0, 0, 1});
+    backend.fail_share = true;
+    bool failed = false;
+    try { static_cast<void>(tree.fork(prefix, 1)); }
+    catch (const std::runtime_error&) { failed = true; }
+    IE_CHECK(failed);
+    IE_CHECK(prefix->ref_count.load() == 0);
+    backend.fail_share = false;
+    IE_CHECK(tree.fork(prefix, 1) == prefix);
+    IE_CHECK(backend.shares.back()[1] == 1);
+}
+
+IE_TEST_CASE(explicit_busy_slot_cannot_silently_choose_another) {
+    inference_engine::SlotAllocator slots(3);
+    IE_CHECK(slots.acquire(1).value() == 1);
+    IE_CHECK(!slots.acquire(1).has_value());
+    IE_CHECK(slots.acquire(2).value() == 2);
+}
 
 class SplitMix64 {
 public:

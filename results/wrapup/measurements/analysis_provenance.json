@@ -1,0 +1,10 @@
+{
+  "analyzer_sha256": "5215238d084d7797a4cd5fa02d05ead0d49b9effb917fbde4bbd3feabcb97110",
+  "raw_trials_sha256": "3d936a35d8742509e2da5a2fd254b4cdadceb9fed50b4fa9dd40407ed680a86c",
+  "command": [
+    "scripts/analyze_report3.py",
+    "results/wrapup/measurements"
+  ],
+  "pandas_version": "2.2.3",
+  "quantiles": "linear interpolation; error bars Q1-Q3"
+}

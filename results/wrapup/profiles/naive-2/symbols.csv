@@ -1,0 +1,51 @@
+phase,symbol,samples,active_samples,cpu_delta_s,estimated_cpu_share
+decode,unresolved,423,240,13.109375,0.4926600117439812
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",84,84,4.546875,0.17087492660011744
+decode,ggml_vec_dot_f16,54,54,2.78125,0.10452143276570758
+decode,ggml_vec_mad_f16,41,41,2.21875,0.08338226658837346
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",26,26,1.609375,0.060481503229594835
+decode,ggml_vec_dot_q6_K_q8_K,13,13,0.6875,0.025836758661186142
+decode,ggml_graph_compute_thread,6,6,0.265625,0.009982384028185555
+decode,ggml_compute_forward_flash_attn_ext_f16_one_chunk,4,4,0.203125,0.007633587786259542
+decode,ggml_gemv_q4_K_8x8_q8_K,3,3,0.171875,0.0064591896652965355
+decode,ggml::cpu::repack::extra_buffer_type::get_tensor_traits,3,3,0.15625,0.005871990604815032
+decode,quantize_row_q8_0,3,3,0.15625,0.005871990604815032
+decode,quantize_row_q8_K_ref,2,2,0.125,0.004697592483852026
+decode,ggml_compute_forward_rope_flt<float>,1,1,0.0625,0.002348796241926013
+decode,ggml_compute_forward_mul_mat,1,1,0.0625,0.002348796241926013
+decode,ggml_get_n_tasks,1,1,0.0625,0.002348796241926013
+decode,ggml_type_size,1,1,0.0625,0.002348796241926013
+decode,ggml_compute_forward_set_rows,1,1,0.0625,0.002348796241926013
+decode,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::mnpack",1,1,0.0625,0.002348796241926013
+decode,ggml_can_fuse,1,1,0.0625,0.002348796241926013
+decode,ggml_vec_swiglu_f32,1,1,0.0625,0.002348796241926013
+decode,__security_check_cookie,1,1,0.046875,0.0017615971814445098
+decode,ggml_compute_forward_add,1,1,0.03125,0.0011743981209630064
+load,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",1,1,0.09375,0.6666666666666666
+load,llama_vocab::impl::load,1,1,0.046875,0.3333333333333333
+load,unresolved,10,0,0.0,0.0
+prefill,unresolved,1754,818,47.375,0.6850429281518301
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q5_0,block_q8_0,float>::gemm4xN<2>",204,193,11.109375,0.16064166290103932
+prefill,simd_gemm,60,56,3.21875,0.04654315408947131
+prefill,ggml_compute_forward_flash_attn_ext_tiled,39,33,2.21875,0.032083145051965654
+prefill,ggml_vec_dot_q6_K_q8_K,34,32,2.015625,0.029145955716222322
+prefill,ggml_gemm_q4_K_8x8_q8_K,12,12,0.65625,0.009489380930863081
+prefill,ggml_vec_soft_max_f32,9,9,0.59375,0.00858563036601898
+prefill,"`anonymous namespace'::tinyBLAS_Q0_AVX<block_q8_0,block_q8_0,float>::gemm4xN<2>",7,6,0.390625,0.005648441030275644
+prefill,quantize_row_q8_0,8,6,0.265625,0.0038409399005874378
+prefill,"apply_binary_op<&op_add,float,float,float>",4,4,0.25,0.0036150022593764122
+prefill,ggml_cpu_fp16_to_fp32,4,3,0.171875,0.0024853140533212833
+prefill,rotate_pairs<float>,3,3,0.15625,0.0022593764121102574
+prefill,ggml_compute_forward_rms_norm_f32<1>,3,2,0.109375,0.0015815634884771804
+prefill,ggml_compute_forward_mul_mat,2,2,0.09375,0.0013556258472661546
+prefill,ggml_rope_cache_init,2,2,0.078125,0.0011296882060551287
+prefill,ggml_cpu_iqp_supports_mul_mat,1,1,0.0625,0.0009037505648441031
+prefill,ggml_compute_forward_flash_attn_ext_f16,1,1,0.0625,0.0009037505648441031
+prefill,ggml_quantize_mat_q8_K_4x8,1,1,0.0625,0.0009037505648441031
+prefill,ggml_gemv_q4_K_8x8_q8_K,1,1,0.0625,0.0009037505648441031
+prefill,ggml_compute_forward_flash_attn_ext_f16_one_chunk,1,1,0.0625,0.0009037505648441031
+prefill,ggml_type_size,1,1,0.046875,0.0006778129236330773
+prefill,ggml_compute_forward_mul_mat_one_chunk,1,1,0.046875,0.0006778129236330773
+prefill,ggml_vec_swiglu_f32,1,1,0.046875,0.0006778129236330773
+prefill,ggml_cpu_fp32_to_fp16,2,0,0.0,0.0
+prefill,ggml_compute_forward_flash_attn_ext,1,0,0.0,0.0

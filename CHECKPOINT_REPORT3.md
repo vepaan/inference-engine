@@ -1,3 +1,5 @@
+> November 9 continuation: [Pillar A wrap-up evidence](results/wrapup/HANDOFF.md) supersedes the stopping point below. Report 3 records remain historical.
+
 > Current stopping point: [report-ready technical handoff](results/report3/final/REPORT_READY.md). Read this before the older checkpoint material below.
 
 > Continuation update: read [results/report3/BENCHMARK_NOTES.md](results/report3/BENCHMARK_NOTES.md)
@@ -6,10 +8,10 @@
 > verification while direct batched naive/tree parity passes. Earlier claims of full
 > correctness/profiling completion below are superseded by that evidence.
 
-# Senior Seminar Progress Report 3 â€” Agent Handoff & Checkpoint
+# Senior Seminar Progress Report 3 — Agent Handoff & Checkpoint
 **Date:** October 18, 2026  
 **Repository:** `https://github.com/vepaan/inference-engine`  
-**Target:** Weeks 8â€“9 Deliverables (Correctness Verification, Reproducibility, Decode Profiling)
+**Target:** Weeks 8–9 Deliverables (Correctness Verification, Reproducibility, Decode Profiling)
 
 ---
 

@@ -71,6 +71,7 @@ public:
 
     [[nodiscard]] std::uint32_t n_ctx() const noexcept;
     [[nodiscard]] std::uint32_t n_seq_max() const noexcept;
+    [[nodiscard]] llama_pos seq_position_max(llama_seq_id seq) const;
 
 private:
     llama_context* context_;

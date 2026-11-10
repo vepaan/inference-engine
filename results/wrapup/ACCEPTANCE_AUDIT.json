@@ -1,0 +1,171 @@
+{
+  "acceptance": "bounded Pillar A prototype evidence complete",
+  "tree_regressions": 21,
+  "real_ctest_targets": 5,
+  "mock_ctest_targets": 2,
+  "lifecycle_reuse_cycles": 12,
+  "diagnostic_cases": 15,
+  "diagnostic_failures_retained": [
+    "tree-t8-f16-on-greedy",
+    "tree-t8-f16-on-replay",
+    "naive-t8-f16-on-greedy",
+    "naive-t8-f16-on-replay",
+    "tree-t1-f32-off-replay",
+    "tree-t8-f32-off-replay",
+    "tree-t8-f16-off-replay"
+  ],
+  "high_priority_measured_trials": 20,
+  "original_primary_matrix_target": 80,
+  "original_primary_matrix_unmeasured": 60,
+  "profile_runs": [
+    {
+      "run": "naive-1",
+      "samples": 5309,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.7023269870051375,
+      "api_failures": {}
+    },
+    {
+      "run": "naive-2",
+      "samples": 3019,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.7994670219853431,
+      "api_failures": {
+        "suspend": 1,
+        "process_query": 1
+      }
+    },
+    {
+      "run": "naive-3",
+      "samples": 2535,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.8139031647281579,
+      "api_failures": {}
+    },
+    {
+      "run": "tree-1",
+      "samples": 4955,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.8806259699948267,
+      "api_failures": {}
+    },
+    {
+      "run": "tree-2",
+      "samples": 2711,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.8570150322118826,
+      "api_failures": {}
+    },
+    {
+      "run": "tree-3",
+      "samples": 3294,
+      "resolved_decode_cpu_fraction": 1.0,
+      "export_decode_cpu_fraction": 0.8290760012614318,
+      "api_failures": {}
+    }
+  ],
+  "scope": "CPU, deterministic synthetic workloads, explicit single-writer lifetimes; not general backend numerical invariance",
+  "all_source_snapshots_verified": true,
+  "auditor_sha256": "8a7cec560f090b3d72a1df9b25aad37d79c33ea66be76ce71a4925a956f3bd52",
+  "profile_naming": "PDB symbols plus explicitly labeled nearest DLL exports; not on-CPU stacks",
+  "comparison": [
+    {
+      "b": 2,
+      "metric": "kv_bytes",
+      "naive_median": 58982400.0,
+      "tree_median": 35389440.0,
+      "tree_change_percent": -40.0
+    },
+    {
+      "b": 2,
+      "metric": "private_bytes",
+      "naive_median": 163221504.0,
+      "tree_median": 139403264.0,
+      "tree_change_percent": -14.592587015985348
+    },
+    {
+      "b": 2,
+      "metric": "peak_ws_bytes",
+      "naive_median": 205791232.0,
+      "tree_median": 182071296.0,
+      "tree_change_percent": -11.526213128458263
+    },
+    {
+      "b": 2,
+      "metric": "prefill_ms",
+      "naive_median": 18221.4626,
+      "tree_median": 3015.3209,
+      "tree_change_percent": -83.45181741887174
+    },
+    {
+      "b": 2,
+      "metric": "tok_per_s",
+      "naive_median": 83.73595,
+      "tree_median": 21.849716,
+      "tree_change_percent": -73.90640937375166
+    },
+    {
+      "b": 2,
+      "metric": "step_us_p50",
+      "naive_median": 17596.7,
+      "tree_median": 16782.4,
+      "tree_change_percent": -4.627572215244902
+    },
+    {
+      "b": 2,
+      "metric": "step_us_p99",
+      "naive_median": 95096.489,
+      "tree_median": 1213007.638,
+      "tree_change_percent": 1175.55459802517
+    },
+    {
+      "b": 8,
+      "metric": "kv_bytes",
+      "naive_median": 235929600.0,
+      "tree_median": 64880640.0,
+      "tree_change_percent": -72.5
+    },
+    {
+      "b": 8,
+      "metric": "private_bytes",
+      "naive_median": 344481792.0,
+      "tree_median": 171900928.0,
+      "tree_change_percent": -50.098689686333266
+    },
+    {
+      "b": 8,
+      "metric": "peak_ws_bytes",
+      "naive_median": 386596864.0,
+      "tree_median": 214732800.0,
+      "tree_change_percent": -44.45562807255467
+    },
+    {
+      "b": 8,
+      "metric": "prefill_ms",
+      "naive_median": 28817.5122,
+      "tree_median": 2098.7322,
+      "tree_change_percent": -92.71716383623149
+    },
+    {
+      "b": 8,
+      "metric": "tok_per_s",
+      "naive_median": 180.304495,
+      "tree_median": 73.762306,
+      "tree_change_percent": -59.09014581139533
+    },
+    {
+      "b": 8,
+      "metric": "step_us_p50",
+      "naive_median": 43935.3,
+      "tree_median": 39095.05,
+      "tree_change_percent": -11.016767838162023
+    },
+    {
+      "b": 8,
+      "metric": "step_us_p99",
+      "naive_median": 50128.195,
+      "tree_median": 1475683.505,
+      "tree_change_percent": 2843.8193515645235
+    }
+  ]
+}

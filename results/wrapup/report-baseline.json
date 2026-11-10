@@ -1,0 +1,14 @@
+{
+  "report": "Progress Report 3, October 19, 2026, Weeks 8-9",
+  "sha256": "17cfa4e05a0d510b18ed90906dc1dee5ca0aa82427d7501d50b8ab339b49ca15",
+  "pages": 7,
+  "request_date": "2026-11-09",
+  "revised_scope": "Wrap up Pillar A first; B and C deferred",
+  "promised_deliverables": [
+    "3-5 repeated trials per priority workload",
+    "same-input numerical controls",
+    "paired resolved CPU profiles",
+    "conditional attention ablation and second-model tests",
+    "scheduler design after Pillar A evidence stabilizes"
+  ]
+}
